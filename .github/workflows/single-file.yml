@@ -1,0 +1,47 @@
+name: Single offline file
+
+# After every change on main, build the single offline file and publish it as the
+# "Latest build" release. Its download link never changes:
+#   https://github.com/tenluke/kaku/releases/download/latest/kaku.html
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # also allows running it by hand from the Actions tab
+
+# Needed to create the release; nothing else is written.
+permissions:
+  contents: write
+
+# If two merges happen quickly, only the newest build is published.
+concurrency:
+  group: single-file
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    # Pinned so the Ubuntu 26 switch happens when we choose, not mid-release.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:single
+      - run: cp dist-single/index.html kaku.html
+      - name: Publish as the "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Replace the previous "latest" release, so the link always gives the newest file.
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest kaku.html \
+            --title "Latest build" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --notes "Single offline file of 書く, built from commit ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d).
+          Download kaku.html and open it in a browser: it works without internet.
+          Progress is saved in the browser you open it with. Keep the file in one place; to move
+          progress (also to or from the website), use ⋯ → Backup & transfer."

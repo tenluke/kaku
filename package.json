@@ -1,0 +1,49 @@
+{
+  "name": "kaku",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Practise writing Japanese kana and kanji by drawing them from memory.",
+  "license": "AGPL-3.0-or-later",
+  "author": "Tenluke",
+  "homepage": "https://github.com/tenluke/kaku",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tenluke/kaku.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "npm install && npm test && npm run dev",
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "build:single": "npm run typecheck && vite build --mode single",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
+    "audit": "npm audit --audit-level=low",
+    "data": "node scripts/data/build-data.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "fast-xml-parser": "5.12.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.5",
+    "vite-plugin-singlefile": "2.3.4",
+    "vitest": "4.1.12"
+  },
+  "overrides": {
+    "minimatch": "11.0.7"
+  }
+}

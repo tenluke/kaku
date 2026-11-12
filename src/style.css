@@ -1,0 +1,1253 @@
+:root {
+  --bg: #110e2a;
+  --pn: #1b1740;
+  --ink: #f4f0ff;
+  --dim: #b7afe0;
+  --red: #ff7eb6;
+  --ok: #6fe3b0;
+  --bad: #ff6b81;
+  --ln: #2e2766;
+  --hi: #231e52;
+  --scroll: #4a4190; /* scrollbar handle: a bit lighter than the lines, so it can be found */
+  --bg-top: #1c1745; /* top of the page's background gradient */
+  --accent-soft: #ff9ac8; /* labels and the big characters on tiles */
+  --on-accent: #1a1033; /* text on accent-coloured buttons */
+  --accent-shadow: var(--accent-shadow); /* the "pressable" edge under accent buttons */
+  --chosen: #3a2468; /* background of chosen tiles */
+  --overlay: rgba(17, 14, 42, 0.85); /* behind dialogs */
+  --shadow: rgba(0, 0, 0, 0.45);
+  --warning: #ffd479;
+  --rate-lightness: 55%; /* Progress colours: red → green at this lightness */
+  /* Script colours (practice badge and drawing frame) */
+  --hiragana: #ff9ac8;
+  --katakana: #8fd3ff;
+  --kanji: #ffd479;
+  /* Drawing area (read by drawing.ts) */
+  --draw-ink: #f4f0ff;
+  --draw-guide: #2e2766;
+  --draw-hint: #ffd479;
+  --draw-answer: #ff7eb6;
+  --draw-number: #ffffff;
+  --draw-wrong: #ff5c7a;
+  color-scheme: dark;
+  /* Scrollbars in the app's colours instead of the browser's own (the page and every
+     scrolling box; scrollbar-color is inherited). Firefox and Chrome support it. */
+  scrollbar-color: var(--scroll) transparent;
+}
+
+/* Light theme ("Sakura"): the same names with light colours. The theme switch in the ⋯ menu
+   sets data-theme on <html> (see theme.ts). Every text colour has at least 4.5:1 contrast. */
+:root[data-theme='light'] {
+  --bg: #fbf1f4;
+  --pn: #ffffff;
+  --ink: #2d2229;
+  --dim: #75606b;
+  --red: #c2185b;
+  --ok: #2e7d4f;
+  --bad: #c62828;
+  --ln: #f1d3dd;
+  --hi: #fdf3f6;
+  --scroll: #e2b8c7;
+  --bg-top: #fffafb;
+  --accent-soft: #b0154f;
+  --on-accent: #ffffff;
+  --accent-shadow: #8c1043;
+  --chosen: #fde0ea;
+  --overlay: rgba(45, 34, 41, 0.45);
+  --shadow: rgba(140, 16, 67, 0.18);
+  --warning: #8a5a00;
+  --rate-lightness: 40%;
+  --hiragana: #b0154f;
+  --katakana: #1565a0;
+  --kanji: #8a5a00;
+  --draw-ink: #2d2229;
+  --draw-guide: #e7bfcd;
+  --draw-hint: #c27a00;
+  --draw-answer: #c2185b;
+  --draw-number: #2d2229;
+  --draw-wrong: #c62828;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+/* The small scrolling boxes (sublists, character picker) get a thin scrollbar */
+.book-groups,
+#character-picker {
+  scrollbar-width: thin;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+  background: linear-gradient(160deg, var(--bg-top), var(--bg) 70%) fixed;
+  color: var(--ink);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'Hiragino Sans',
+    'Yu Gothic',
+    'Noto Sans JP',
+    sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+main {
+  width: 100%;
+  max-width: 760px;
+  padding: 16px;
+}
+.t {
+  margin: 8px 0 10px;
+  font-size: 1.8rem;
+}
+.t span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 10px;
+  color: var(--dim);
+}
+.p {
+  background: var(--pn);
+  border: 2px solid var(--ln);
+  border-radius: 28px;
+  padding: 24px;
+  margin: 10px 0;
+}
+.l {
+  margin: 18px 0 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+}
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+button {
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.c {
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 2px solid var(--ln);
+  background: var(--hi);
+}
+.c.on {
+  border-color: var(--red);
+  background: var(--chosen);
+}
+.cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border-radius: 18px;
+  font-size: 0.9rem;
+}
+.sc em {
+  font-style: normal;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--accent-soft);
+}
+.st {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 4px;
+  border-radius: 14px;
+}
+.st em {
+  font-style: normal;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  color: var(--accent-soft);
+}
+.st span {
+  font-size: 0.75rem;
+}
+.st small {
+  font-size: 0.7rem;
+  color: var(--dim);
+}
+.seg {
+  display: flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 16px;
+  background: var(--bg);
+}
+.seg .c {
+  border-color: transparent;
+  background: transparent;
+}
+.seg .c.on {
+  background: var(--red);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+.num {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.num button {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 2px solid var(--ln);
+  background: var(--hi);
+  font-size: 1.2rem;
+}
+input[type='number'] {
+  width: 70px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--ink);
+  border: 2px solid var(--ln);
+  border-radius: 12px;
+  padding: 8px;
+  font: inherit;
+  -moz-appearance: textfield;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 22px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.info,
+.note {
+  color: var(--dim);
+}
+.note {
+  font-size: 0.85rem;
+  margin: 16px 0 0;
+}
+.go {
+  font-weight: 700;
+  border: 0;
+  border-radius: 16px;
+  background: var(--red);
+  color: var(--on-accent);
+  padding: 14px 26px;
+  box-shadow: 0 5px 0 var(--accent-shadow);
+}
+.go:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--accent-shadow);
+}
+.go:disabled {
+  opacity: 0.4;
+}
+#progress-bar {
+  height: 10px;
+  background: var(--ln);
+  border-radius: 5px;
+  overflow: hidden;
+}
+#progress-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--red);
+  border-radius: 5px;
+  transition: width 0.4s;
+}
+.mt {
+  display: flex;
+  justify-content: space-between;
+  color: var(--dim);
+  font-size: 0.9rem;
+  margin: 8px 0;
+}
+#prompt {
+  text-align: center;
+  margin: 6px 0 10px;
+}
+#prompt small {
+  display: block;
+  color: var(--dim);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+#prompt-text {
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+#prompt .prompt-meaning {
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+#drawing-stage {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  touch-action: none;
+  background: var(--bg);
+  border: 2px solid var(--ln);
+  border-radius: 24px;
+  cursor: crosshair;
+}
+#drawing-stage canvas,
+#drawing-stage svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+#drawing-stage svg {
+  pointer-events: none;
+}
+#drawing-stage canvas {
+  transition: opacity 0.4s;
+}
+#drawing-stage.done canvas {
+  opacity: 0.3;
+}
+#message {
+  min-height: 3.8em;
+  text-align: center;
+  margin: 12px 0;
+  line-height: 1.5;
+}
+.g2 {
+  font-size: 1.8rem;
+  color: var(--red);
+}
+#actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#actions button {
+  flex: 1 1 80px;
+  padding: 12px 0;
+  border-radius: 14px;
+  border: 2px solid var(--ln);
+  background: var(--hi);
+}
+#actions .go {
+  border: 0;
+  background: var(--red);
+  box-shadow: 0 4px 0 var(--accent-shadow);
+}
+#next-button {
+  display: none;
+  width: 100%;
+}
+.lk .a {
+  display: none;
+}
+.lk #next-button {
+  display: block;
+}
+#final-percent {
+  font-size: 4.5rem;
+  font-weight: 700;
+  color: var(--red);
+  text-align: center;
+}
+#final-summary {
+  text-align: center;
+  color: var(--dim);
+}
+.chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 3px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 2px solid var(--ln);
+  font-size: 1.3rem;
+}
+.chip small {
+  font-size: 0.65rem;
+}
+.chip.ok {
+  border-color: var(--ok);
+}
+.chip.no {
+  border-color: var(--bad);
+}
+.row2 {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 2px solid var(--ln);
+}
+.g {
+  font-size: 2.4rem;
+  color: var(--red);
+  min-width: 70px;
+  text-align: center;
+}
+.c.sm {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  border-radius: 10px;
+}
+#character-picker {
+  margin-top: 10px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.pg {
+  margin-bottom: 14px;
+}
+.ph {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.ph span {
+  color: var(--dim);
+  font-size: 0.85rem;
+  margin-right: auto;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  gap: 6px;
+}
+.tl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 2px;
+  border-radius: 12px;
+  border: 2px solid var(--red);
+  background: var(--chosen);
+}
+.tl b {
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+.tl small {
+  font-size: 0.6rem;
+  color: var(--dim);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl.off {
+  border-color: var(--ln);
+  background: var(--hi);
+  opacity: 0.4;
+}
+footer {
+  color: var(--dim);
+  font-size: 0.7rem;
+  text-align: center;
+  margin: 20px 0;
+}
+
+html {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.l.first {
+  margin-top: 0;
+}
+.l .opt {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--dim);
+}
+.endbtns {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.endbtns button {
+  flex: 1;
+}
+.dim {
+  color: var(--dim);
+}
+
+/* Sub-boxes under each script: they slide and fade away when the script is switched off. */
+.col {
+  transition: gap 0.25s ease;
+}
+.col.off {
+  gap: 0;
+}
+.sets-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  position: relative;
+  transition:
+    grid-template-rows 0.25s ease,
+    opacity 0.2s ease;
+}
+.sets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+.sets .st {
+  transition: transform 0.25s ease;
+}
+.sets .st:first-child {
+  margin-top: 10px;
+}
+.col.off .sets-wrap {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    grid-template-rows 0.25s ease,
+    opacity 0.2s ease,
+    visibility 0s linear 0.25s;
+}
+.col.off .sets .st {
+  transform: translateY(-10px) scale(0.95);
+}
+@media (prefers-reduced-motion: reduce) {
+  .col,
+  .sets-wrap,
+  .sets .st {
+    transition: none !important;
+  }
+}
+
+/* End-session X */
+#practice-screen {
+  position: relative;
+}
+.end-x {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 12px;
+  border: 2px solid var(--ln);
+  background: var(--hi);
+  font-size: 1rem;
+  line-height: 1;
+}
+.col {
+  min-width: 0;
+}
+.st span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .cols {
+    gap: 6px;
+  }
+  .sc {
+    font-size: 0.75rem;
+  }
+  .sc em {
+    font-size: 1.6rem;
+  }
+}
+
+/* In-page confirmation box */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--overlay);
+}
+.dialog {
+  width: 100%;
+  max-width: 340px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 2px solid var(--ln);
+  background: var(--pn);
+}
+.dialog p {
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+.dialog-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* "I was right" (left, about a quarter) and Next (right, about three quarters) after a symbol is answered */
+#actions #next-button {
+  flex: 3 1 0;
+}
+#actions #right-button {
+  display: none;
+  flex: 1 1 0;
+}
+#actions.lk.can-override #right-button {
+  display: block;
+}
+/* Top menu (tab bar) */
+.topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  border-bottom: 2px solid var(--ln);
+}
+.brand {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--red);
+}
+.tabs {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tab {
+  flex: none;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 12px 12px 0 0;
+  background: none;
+  color: var(--dim);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.tab.on {
+  opacity: 1;
+  color: var(--ink);
+  border-bottom-color: var(--red);
+  background: var(--hi);
+}
+.more-button {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 4px;
+  padding: 0;
+  border: 2px solid var(--ln);
+  border-radius: 12px;
+  background: var(--hi);
+  font-size: 1.1rem;
+}
+.menu-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 6;
+  min-width: 220px;
+  padding: 6px;
+  border: 2px solid var(--ln);
+  border-radius: 16px;
+  background: var(--pn);
+  box-shadow: 0 10px 30px var(--shadow);
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+}
+.menu-item:hover {
+  background: var(--hi);
+}
+.menu-item em {
+  width: 22px;
+  font-style: normal;
+  text-align: center;
+  color: var(--accent-soft);
+}
+.menu-pop hr {
+  margin: 6px 4px;
+  border: 0;
+  border-top: 2px solid var(--ln);
+}
+
+/* Setup screen split into boxes: Kana and Kanji */
+.box {
+  margin-top: 12px;
+  padding: 14px;
+  border: 2px solid var(--ln);
+  border-radius: 22px;
+}
+.box:first-child {
+  margin-top: 0;
+}
+.box > .l {
+  margin-top: 0;
+}
+.cols-1 {
+  grid-template-columns: 1fr;
+}
+.box-kanji .sets {
+  flex-direction: row;
+}
+.box-kanji .st {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Kanji tab: the level tiles sit in one row */
+.box-kanji .sets .st:first-child {
+  margin-top: 0;
+}
+
+/* Title of the Progress and Backup screens */
+.screen-title {
+  margin: 0 0 8px;
+  font-size: 1.3rem;
+}
+
+/* Script badge above the prompt. Each script has its own colour, which the drawing area's
+   frame repeats, so a mixed hiragana + katakana session shows clearly what to write. */
+#prompt #script-label {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 12px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+#practice-screen[data-script='hiragana'] {
+  --script: var(--hiragana);
+}
+#practice-screen[data-script='katakana'] {
+  --script: var(--katakana);
+}
+#practice-screen[data-script='kanji'] {
+  --script: var(--kanji);
+}
+#practice-screen[data-script] #script-label {
+  color: var(--script);
+  background: color-mix(in srgb, var(--script) 12%, transparent);
+}
+#practice-screen[data-script] #drawing-stage {
+  border-color: color-mix(in srgb, var(--script) 55%, transparent);
+}
+
+/* A note that needs attention, e.g. when progress can't be saved */
+.note.warning {
+  color: var(--warning);
+}
+
+/* Progress page */
+.progress-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.progress-tabs .c {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 12px;
+}
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 20px;
+  background: var(--hi);
+}
+.summary-card p {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.85rem;
+  color: var(--dim);
+}
+.summary-card b {
+  color: var(--ink);
+}
+.ring {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+.ring span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--hi);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.action-row button {
+  flex: 1;
+}
+.meter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+.meter-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 2px 12px;
+  overflow: hidden;
+  border: 2px solid var(--ln);
+  border-radius: 12px;
+  background: var(--hi);
+}
+.meter-tile.low {
+  border-style: dashed;
+}
+.meter-tile b {
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+.meter-tile small {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 0.6rem;
+  color: var(--dim);
+}
+.meter-tile::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: var(--ln);
+}
+.meter-tile i {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  width: calc(var(--rate, 0) * 100%);
+  background: var(--color, transparent);
+}
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+.legend i {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+}
+
+/* Progress page: Reset sits next to "Practise weakest", taking only the space it needs */
+.action-row #reset-progress {
+  flex: 0 1 auto;
+}
+
+/* Custom lists: list tiles, their delete button, and the "Save as list" row */
+.custom-item {
+  position: relative;
+}
+.custom-tile {
+  width: 100%;
+}
+.empty-note {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--dim);
+  text-align: center;
+}
+.save-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+input[type='text'] {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--ink);
+  border: 2px solid var(--ln);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font: inherit;
+}
+.box-custom .custom-item .st {
+  margin-top: 0;
+}
+
+/* Short messages fade out (see flashMessage in dom.ts) */
+#list-status,
+#progress-status {
+  transition: opacity 0.6s;
+}
+.faded {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  #list-status,
+  #progress-status {
+    transition: none;
+  }
+}
+
+/* Edit (left) and delete (right) icons in the corners of the chosen list's tile */
+.list-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--dim);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.list-icon:hover,
+.list-icon:focus-visible {
+  color: var(--ink);
+}
+.list-icon.edit {
+  left: 6px;
+}
+.list-icon.delete {
+  right: 6px;
+}
+/* Leave room for the icons, so a long name ends in "…" instead of hiding under them */
+.custom-item > .on {
+  padding-left: 34px;
+  padding-right: 34px;
+}
+/* Saved lists use the Books layout; the first sublist leaves room for the dashed line */
+.book-groups > .custom-item:first-child {
+  margin-top: 10px;
+}
+.custom-item > .st,
+.custom-item > .sc {
+  width: 100%;
+}
+.list-tile em {
+  font-size: 1.3rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* "Save as list": main list menu, (new main list name), sublist name, button */
+.save-row {
+  flex-wrap: wrap;
+}
+.save-row select {
+  flex: 1 1 140px;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--ink);
+  border: 2px solid var(--ln);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.save-row input[type='text'] {
+  flex: 1 1 140px;
+}
+/* The rename (I-beam) icon, and the "Rename" buttons below a main list's sublists */
+.ibeam {
+  width: 0.8em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vertical-align: -0.12em;
+}
+/* A chosen sublist has two icons on the left: edit (✎) above rename (I-beam) */
+.list-icon.upper {
+  top: calc(50% - 14px);
+}
+.list-icon.lower {
+  top: calc(50% + 14px);
+}
+#confirm-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 16px;
+}
+
+/* Backup & transfer screen */
+textarea {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 2px solid var(--ln);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font: inherit;
+  resize: vertical;
+}
+#export-text {
+  min-height: 120px;
+  font-size: 0.75rem;
+}
+#backup-screen .row {
+  margin-top: 8px;
+}
+#backup-screen .c small {
+  margin-left: 6px;
+  color: var(--dim);
+}
+#backup-status {
+  min-height: 1.3em;
+}
+/* "Start over" deletes everything, so it looks different from the other buttons */
+.danger-zone {
+  margin-top: 22px;
+  padding-top: 6px;
+  border-top: 2px solid var(--ln);
+}
+.c.danger {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+/* Credits links in the footer: visible as links, but as quiet as the footer text */
+footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+footer a:hover,
+footer a:focus-visible {
+  color: var(--ink);
+}
+
+/*
+ * Lists tab, Books: laid out like the Kana tab (see .col and .sets-wrap above). A book can have
+ * many groups, so its column shows three and scrolls for the rest.
+ */
+.book-tile em {
+  font-size: 1.6rem;
+}
+#book-rows {
+  margin-bottom: 12px;
+}
+.book-tile small {
+  color: var(--dim);
+}
+.book-groups {
+  --group-height: 64px;
+  /* the first tile's top margin + three tiles + the two gaps between them */
+  max-height: calc(10px + 3 * var(--group-height) + 2 * 6px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y proximity;
+}
+.book-groups .st {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: var(--group-height);
+  justify-content: center;
+  scroll-snap-align: start;
+}
+
+/*
+ * Lists tab "deck" (see rollout.ts): a book's or main list's tiles roll out from under its
+ * tile, one after another, and roll back in, the bottom one first. Each tile knows its place
+ * in --i; only three are on screen; the ones after them (data-far) don't move.
+ */
+.deck .book-groups > .st,
+.deck .book-groups > .custom-item {
+  --step: min(var(--i, 0), 3);
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15),
+    opacity 0.25s ease;
+  transition-delay: calc(var(--step) * 50ms);
+}
+.deck.off .book-groups > .st,
+.deck.off .book-groups > .custom-item {
+  /* tucked under the main tile: the further down a tile belongs, the further it travels */
+  transform: translateY(calc((var(--step) + 1) * -72px)) scale(0.9);
+  opacity: 0;
+  transition:
+    transform 0.25s ease-in,
+    opacity 0.25s ease-in;
+  transition-delay: calc((3 - var(--step)) * 40ms);
+}
+/* Tiles below the visible three (data-far) would slide through view: they just appear or go */
+.deck .book-groups > [data-far] {
+  transition: none;
+}
+.deck.off .book-groups > [data-far] {
+  opacity: 0;
+  transition: none;
+}
+/* Used by rollOut() to fold a freshly drawn column at once, before unfolding it */
+.deck.instant,
+.deck.instant * {
+  transition: none !important;
+}
+/* While rolling in, the column folds away only after its tiles are back under the tile */
+.deck.closing .sets-wrap {
+  transition:
+    grid-template-rows 0.2s ease 0.25s,
+    opacity 0.2s ease 0.25s,
+    visibility 0s linear 0.45s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck .book-groups > .st,
+  .deck .book-groups > .custom-item,
+  .deck .sets-wrap {
+    transition: none !important;
+  }
+}
+
+/*
+ * Theme switch in the ⋯ menu: a slider with a sun (light) and a moon (dark). The round knob
+ * slides under the icon of the theme in use, which then shows in the button colours.
+ */
+.theme-row {
+  justify-content: space-between;
+  cursor: default;
+}
+.theme-row:hover {
+  background: none;
+}
+.theme-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid var(--ln);
+  border-radius: 999px;
+  background: var(--hi);
+  cursor: pointer;
+}
+.theme-switch:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.theme-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 2px 4px var(--shadow);
+  transition: transform 0.3s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+.theme-switch[aria-checked='true'] .theme-knob {
+  transform: translateX(32px);
+}
+.theme-icon {
+  position: absolute;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.3s;
+}
+.theme-icon.sun {
+  left: 6px;
+}
+.theme-icon.moon {
+  right: 6px;
+}
+/* The icon of the theme in use sits on the knob */
+.theme-switch[aria-checked='false'] .sun,
+.theme-switch[aria-checked='true'] .moon {
+  stroke: var(--on-accent);
+}
+.theme-switch[aria-checked='true'] .moon {
+  fill: var(--on-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-knob,
+  .theme-icon {
+    transition: none;
+  }
+}

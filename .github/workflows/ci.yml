@@ -1,0 +1,39 @@
+name: CI
+
+# Runs on every push and pull request, so problems show up before merging.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Only needs to read the code.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    # Pinned so the Ubuntu 26 switch happens when we choose, not mid-release.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Fails if any library has a known security problem.
+      - run: npm run audit
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # The single offline file must keep building. On pull requests it is
+      # attached to the run ("Artifacts" on the run's page), so it can be tried before merging.
+      - run: npm run build:single
+      - uses: actions/upload-artifact@v7
+        if: github.event_name == 'pull_request'
+        with:
+          name: kaku-offline-file
+          path: dist-single/index.html
+          retention-days: 14

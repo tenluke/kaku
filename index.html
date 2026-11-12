@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#110e2a" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="書く" />
+    <title>書く · Japanese Drawing Practice</title>
+    <!-- The tab and home-screen icons are added by src/ui/icons.ts -->
+  </head>
+  <body>
+    <main>
+      <header class="topbar" id="topbar">
+        <h1 class="brand">書く</h1>
+        <nav class="tabs" aria-label="Main menu">
+          <button class="tab on" id="open-kana" data-tab="kana">Kana</button>
+          <button class="tab" id="open-kanji" data-tab="kanji">Kanji</button>
+          <button class="tab" id="open-custom" data-tab="custom">Lists</button>
+          <button class="tab" id="open-progress">Progress</button>
+        </nav>
+        <button
+          class="more-button"
+          id="more-button"
+          aria-label="More"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="more-menu"
+        >
+          ⋯
+        </button>
+        <div class="menu-pop" id="more-menu" hidden>
+          <div class="menu-item theme-row">
+            <span id="theme-label">Theme</span>
+            <button
+              class="theme-switch"
+              id="theme-switch"
+              role="switch"
+              aria-checked="true"
+              aria-label="Dark mode"
+              title="Light or dark"
+            >
+              <span class="theme-knob"></span>
+              <svg class="theme-icon sun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2" />
+                <path
+                  d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"
+                />
+              </svg>
+              <svg class="theme-icon moon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+              </svg>
+            </button>
+          </div>
+          <hr />
+          <button class="menu-item" id="open-backup"><em>⇄</em>Backup &amp; transfer</button>
+          <hr />
+          <button class="menu-item" id="open-about"><em>ⓘ</em>About &amp; credits</button>
+        </div>
+      </header>
+
+      <section id="setup-screen" class="p" aria-label="Choose what to practise">
+        <div class="box box-kana" data-tab-box="kana">
+          <div class="l">Kana</div>
+          <div class="cols cols-2">
+            <div class="col" data-script="hiragana">
+              <button class="c sc tg" data-script-toggle="hiragana"><em>ひ</em>Hiragana</button>
+              <div class="sets-wrap">
+                <div class="sets">
+                  <button class="c st tg" data-set-toggle="hiragana basic">
+                    <em>あ</em><span>Basic</span><small>46</small></button
+                  ><button class="c st tg" data-set-toggle="hiragana voiced">
+                    <em>が</em><span>Voiced</span><small>25</small></button
+                  ><button class="c st tg" data-set-toggle="hiragana digraph">
+                    <em>きゃ</em><span>Digraphs</span><small>33</small>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col off" data-script="katakana">
+              <button class="c sc tg" data-script-toggle="katakana"><em>カ</em>Katakana</button>
+              <div class="sets-wrap">
+                <div class="sets">
+                  <button class="c st tg" data-set-toggle="katakana basic">
+                    <em>ア</em><span>Basic</span><small>46</small></button
+                  ><button class="c st tg" data-set-toggle="katakana voiced">
+                    <em>ガ</em><span>Voiced</span><small>25</small></button
+                  ><button class="c st tg" data-set-toggle="katakana digraph">
+                    <em>キャ</em><span>Digraphs</span><small>33</small>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="box box-kanji" data-tab-box="kanji" hidden>
+          <div class="l">Kanji</div>
+          <div class="cols cols-1">
+            <div class="col">
+              <div class="sets-wrap"><div class="sets" id="level-toggles"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="box box-custom" data-tab-box="custom" hidden>
+          <div class="l">Books</div>
+          <div id="book-rows"></div>
+          <div class="l">Saved lists</div>
+          <div class="sets" id="custom-sets"></div>
+        </div>
+        <div class="l">Mode</div>
+        <div class="row">
+          <div class="seg" role="group" aria-label="Mode">
+            <button class="c on" data-mode="all" aria-pressed="true">All</button
+            ><button class="c" data-mode="random" aria-pressed="false">Random</button
+            ><button class="c" data-mode="words" aria-pressed="false" id="words-mode" hidden>
+              Words
+            </button>
+          </div>
+          <div class="num" id="count-control">
+            <button id="count-minus" aria-label="Fewer">−</button
+            ><input
+              type="number"
+              id="random-count"
+              value="20"
+              min="1"
+              aria-label="Number of symbols"
+            /><button id="count-plus" aria-label="More">+</button>
+          </div>
+        </div>
+        <div class="l">Pick characters <small class="opt">(optional)</small></div>
+        <button class="c" id="picker-toggle" aria-expanded="false" aria-controls="character-picker">
+          All characters ▾
+        </button>
+        <div id="character-picker" hidden></div>
+        <div id="save-list-row" hidden>
+          <div class="save-row">
+            <select id="list-main" aria-label="Main list"></select>
+            <input
+              type="text"
+              id="list-main-name"
+              maxlength="40"
+              placeholder="New main list"
+              aria-label="Name of the new main list"
+              autocomplete="off"
+              hidden
+            />
+            <input
+              type="text"
+              id="list-name"
+              maxlength="40"
+              placeholder="Sublist name"
+              aria-label="Sublist name"
+              autocomplete="off"
+            /><button class="c" id="save-list">Save as list</button>
+          </div>
+          <p id="list-status" class="note" role="status"></p>
+        </div>
+        <div class="foot">
+          <span class="info" id="selection-summary" role="status"></span
+          ><button class="go" id="start-button">Start practice</button>
+        </div>
+        <p class="note warning" id="storage-note" role="status" hidden></p>
+        <p class="note">
+          Draw in the correct stroke order and direction. 70% or more passes, you get 3 tries, and a
+          hint counts as failed. Shortcuts: Enter/Space = check, H = hint, Esc = end session.
+        </p>
+      </section>
+
+      <section id="practice-screen" class="p" hidden aria-label="Practice">
+        <button id="end-session-button" class="end-x" aria-label="End session">✕</button>
+        <div id="progress-bar"><i></i></div>
+        <div class="mt"><span id="progress-text"></span><span id="attempt-text"></span></div>
+        <div id="prompt">
+          <small id="script-label"></small>
+          <div id="prompt-text"></div>
+        </div>
+        <div
+          id="drawing-stage"
+          role="img"
+          aria-label="Drawing area: draw the character with your mouse, finger or pen"
+        >
+          <canvas></canvas><svg id="overlay" aria-hidden="true"></svg>
+        </div>
+        <div id="message" role="status" aria-live="polite"></div>
+        <div id="actions">
+          <button class="a" id="undo-button">Undo</button
+          ><button class="a" id="clear-button">Clear</button
+          ><button class="a" id="hint-button">Hint</button
+          ><button class="a" id="skip-button">Skip</button
+          ><button class="a go" id="check-button">Check</button
+          ><button id="right-button" type="button">I was right</button
+          ><button class="go" id="next-button">Next →</button>
+        </div>
+      </section>
+
+      <section id="results-screen" class="p" hidden aria-label="Results">
+        <div id="final-percent"></div>
+        <div id="final-summary"></div>
+        <div class="l">All symbols</div>
+        <div id="all-results"></div>
+        <div class="l">Failed</div>
+        <div id="failed-list"></div>
+        <div class="endbtns">
+          <button class="go" id="retry-button">Retry failed ones</button
+          ><button class="c" id="again-button">Again</button
+          ><button class="c" id="new-session-button">New session</button>
+        </div>
+      </section>
+
+      <section id="progress-screen" class="p" hidden aria-labelledby="progress-title">
+        <h2 class="screen-title" id="progress-title">Progress</h2>
+        <div class="progress-tabs" id="progress-groups" role="group" aria-label="Show"></div>
+        <div class="summary-card">
+          <div class="ring" id="progress-ring"><span id="progress-ring-text">–</span></div>
+          <p id="progress-summary"></p>
+        </div>
+        <div class="row action-row">
+          <button class="go" id="practise-weakest">Practise weakest</button>
+          <button class="c" id="save-weakest">Save weakest as list</button>
+          <button class="c" id="reset-progress">Reset pass rates…</button>
+        </div>
+        <p id="progress-status" class="note" role="status"></p>
+        <div class="seg" role="group" aria-label="Order">
+          <button class="c" data-progress-order="normal">Normal order</button
+          ><button class="c" data-progress-order="weakest">Weakest first</button>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span>0%</span><i id="legend-bar"></i><span>100%</span>
+        </div>
+        <p class="note">
+          Each character shows how many of its last 10 sessions it passed. A dashed border means it
+          was practised fewer than 3 times, so the colour is only a first guess.
+        </p>
+        <div id="progress-grid" class="meter-grid"></div>
+      </section>
+
+      <section id="backup-screen" class="p" hidden aria-labelledby="backup-title">
+        <h2 class="screen-title" id="backup-title">Backup &amp; transfer</h2>
+        <p class="note">
+          Move your data to another browser, computer or phone: export it here, then import it
+          there. Everything stays on your device unless you move the file yourself.
+        </p>
+
+        <div class="l">Export</div>
+        <div class="row" role="group" aria-label="What to export">
+          <button class="c" data-backup-group="export" data-part="lists">
+            Saved lists<small id="export-count-lists"></small></button
+          ><button class="c" data-backup-group="export" data-part="passRates">
+            Pass rates<small id="export-count-passRates"></small></button
+          ><button class="c" data-backup-group="export" data-part="settings">Settings</button>
+        </div>
+        <div class="row">
+          <button class="go" id="export-download">Download file</button>
+          <button class="c" id="export-copy">Copy as text</button>
+        </div>
+        <textarea id="export-text" readonly hidden aria-label="Backup text"></textarea>
+
+        <div class="l">Import</div>
+        <div class="row">
+          <button class="c" id="import-choose">Choose backup file…</button>
+          <input type="file" id="import-file" accept=".json,application/json" hidden />
+        </div>
+        <textarea
+          id="import-text"
+          placeholder="…or paste the backup text here"
+          aria-label="Paste backup text"
+        ></textarea>
+        <div class="row"><button class="c" id="import-read">Read pasted text</button></div>
+        <div id="import-options" hidden>
+          <p class="note" id="import-summary"></p>
+          <div class="row" role="group" aria-label="What to import">
+            <button class="c" data-backup-group="import" data-part="lists">Saved lists</button
+            ><button class="c" data-backup-group="import" data-part="passRates">Pass rates</button
+            ><button class="c" data-backup-group="import" data-part="settings">Settings</button>
+          </div>
+          <div class="row">
+            <div class="seg" role="group" aria-label="How to import">
+              <button class="c" data-import-mode="merge">Merge</button
+              ><button class="c" data-import-mode="replace">Replace</button>
+            </div>
+          </div>
+          <p class="note">
+            Merge keeps what you have and adds the backup's lists and the more complete pass rates;
+            importing the same file twice changes nothing. Replace overwrites the chosen parts.
+            Settings are always replaced.
+          </p>
+          <div class="row"><button class="go" id="import-apply">Import</button></div>
+        </div>
+        <p id="backup-status" class="note" role="status"></p>
+
+        <div class="danger-zone">
+          <div class="l">Start over</div>
+          <p class="note">
+            Deletes your saved lists, pass rates and settings on this device, as if you opened the
+            app for the first time. Export a backup first if you might want them back.
+          </p>
+          <div class="row"><button class="c danger" id="delete-all">Delete all data…</button></div>
+        </div>
+      </section>
+
+      <footer>
+        <span id="app-version"></span> · App code © 2026 Tenluke,
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0-or-later</a> (<a
+          href="https://github.com/tenluke/kaku"
+          >source code</a
+        >) · Stroke data: <a href="https://kanjivg.tagaini.net/">KanjiVG</a> © Ulrich Apel,
+        <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>, converted for
+        this app · Kanji meanings and readings:
+        <a href="https://www.edrdg.org/wiki/index.php/KANJIDIC_Project">KANJIDIC2</a> © James
+        William Breen and the
+        <a href="https://www.edrdg.org/">Electronic Dictionary Research and Development Group</a>,
+        <a href="https://www.edrdg.org/edrdg/licence.html">CC BY-SA 4.0</a> · Words:
+        <a href="https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project">JMdict</a>,
+        also from the EDRDG under the same licence · JLPT levels:
+        <a href="https://www.tanos.co.uk/jlpt/">Jonathan Waller</a> via
+        <a href="https://github.com/davidluzgouveia/kanji-data">kanji-data</a>
+      </footer>
+    </main>
+
+    <div id="confirm-overlay" class="overlay" hidden>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-text">
+        <p id="confirm-text"></p>
+        <input
+          type="text"
+          id="confirm-input"
+          maxlength="40"
+          autocomplete="off"
+          aria-labelledby="confirm-text"
+          hidden
+        />
+        <div class="dialog-buttons">
+          <button class="c" id="confirm-cancel">Cancel</button>
+          <button class="go" id="confirm-ok">OK</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
