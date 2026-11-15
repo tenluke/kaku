@@ -88,6 +88,12 @@ describe('the Lists tab with saved lists', () => {
     expect(practicePool('custom', selection, { kanji, lists })).toHaveLength(5);
   });
 
+  it('treats a list named like a built-in object entry as off until it is chosen', () => {
+    const named = [{ name: 'constructor', sublists: [{ name: 'A', itemIds: ['kanji:月'] }] }];
+    const selection = defaultSelection();
+    expect(pickerGroups('custom', selection, { kanji, lists: named })).toEqual([]);
+  });
+
   it('leaves out main lists that are off, and sublists or lists that no longer exist', () => {
     const selection = defaultSelection();
     expect(practicePool('custom', selection, { kanji, lists })).toEqual([]);

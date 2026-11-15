@@ -1,4 +1,10 @@
-import type { BookChoice, ListChoice, MainList, SavedSettings } from '../storage/savedData';
+import {
+  choiceOf,
+  type BookChoice,
+  type ListChoice,
+  type MainList,
+  type SavedSettings,
+} from '../storage/savedData';
 import { BOOKS, type BookId, type BookGroup } from './books';
 import { itemsInGroup } from './catalog';
 import {
@@ -125,7 +131,7 @@ function itemById(id: string, kanji: readonly KanjiRecord[]): PracticeItem | und
 /** The chosen sublists of every saved main list that is on, one picker group each. */
 function savedListGroups(selection: Selection, sources: Sources): PickerGroup[] {
   return sources.lists.flatMap((main) => {
-    const choice = selection.listChoices[main.name];
+    const choice = choiceOf(selection.listChoices, main.name);
     if (!choice?.on) return [];
     return main.sublists
       .filter((sub) => choice.sublists.includes(sub.name))

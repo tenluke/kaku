@@ -5,7 +5,13 @@ import {
   renameSublist,
 } from '../practice/customLists';
 import type { Selection } from '../practice/selection';
-import type { MainList, SubList } from '../storage/savedData';
+import {
+  choiceOf as listChoiceOf,
+  setChoice as setListChoice,
+  type ListChoice,
+  type MainList,
+  type SubList,
+} from '../storage/savedData';
 import { store } from './appStore';
 import { askConfirmation, askForText } from './dialog';
 import { byId, escapeHtml, flashMessage } from './dom';
@@ -36,7 +42,9 @@ let selection: Selection;
 let onChange: () => void = () => {};
 let onEditSublist: (main: string, sub: SubList) => void = () => {};
 
-const choiceOf = (main: string) => selection.listChoices[main];
+const choiceOf = (main: string) => listChoiceOf(selection.listChoices, main);
+const setChoice = (main: string, choice: ListChoice) =>
+  setListChoice(selection.listChoices, main, choice);
 
 /** A small round icon on a tile: on the left (edit, or stacked upper/lower) or right (delete). */
 function icon(action: string, label: string, symbol: string, place: string): string {
@@ -98,12 +106,12 @@ function toggleMain(main: MainList, column: Element | null): void {
   const choice = choiceOf(main.name) ?? { on: false, sublists: [] };
   if (choice.on) {
     rollIn(column, () => {
-      selection.listChoices[main.name] = { ...choice, on: false };
+      setChoice(main.name, { ...choice, on: false });
       onChange();
     });
     return;
   }
-  selection.listChoices[main.name] = { ...choice, on: true };
+  setChoice(main.name, { ...choice, on: true });
   const index = store.data.lists.indexOf(main);
   onChange();
   rollOut(document.querySelector(`[data-deck="list:${index}"]`));
@@ -114,7 +122,7 @@ function toggleSublist(main: MainList, sub: SubList): void {
   const sublists = choice.sublists.includes(sub.name)
     ? choice.sublists.filter((name) => name !== sub.name)
     : [...choice.sublists, sub.name];
-  selection.listChoices[main.name] = { ...choice, sublists };
+  setChoice(main.name, { ...choice, sublists });
   onChange();
 }
 
@@ -125,7 +133,7 @@ function renameMain(main: MainList): void {
     if (outcome.kind !== 'renamed') return;
     const choice = choiceOf(main.name);
     forgetChoice(main.name);
-    if (choice) selection.listChoices[outcome.name] = choice;
+    if (choice) setChoice(outcome.name, choice);
     saveLists(outcome.lists);
   });
 }
@@ -137,10 +145,10 @@ function renameSub(main: MainList, sub: SubList): void {
     if (outcome.kind !== 'renamed') return;
     const choice = choiceOf(main.name);
     if (choice) {
-      selection.listChoices[main.name] = {
+      setChoice(main.name, {
         ...choice,
         sublists: choice.sublists.map((name) => (name === sub.name ? outcome.name : name)),
-      };
+      });
     }
     saveLists(outcome.lists);
   });
@@ -157,10 +165,10 @@ function deleteSub(main: MainList, sub: SubList): void {
   askConfirmation(deleteListQuestion(main.name, sub.name), TEXT.deleteList, () => {
     const choice = choiceOf(main.name);
     if (choice) {
-      selection.listChoices[main.name] = {
+      setChoice(main.name, {
         ...choice,
         sublists: choice.sublists.filter((name) => name !== sub.name),
-      };
+      });
     }
     const lists = deleteSublist(store.data.lists, main.name, sub.name);
     // The main list goes when its last sublist is deleted.
