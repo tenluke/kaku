@@ -1,0 +1,55 @@
+name: Update character data
+
+# The EDRDG licence of KANJIDIC2 and JMdict (section 4) asks apps to update the data regularly:
+# "at least once a month" for web apps. On the 1st of every month this rebuilds the data from
+# the sources and, if anything changed, opens a pull request to review and merge.
+on:
+  schedule:
+    - cron: '23 4 1 * *' # 04:23 UTC on the 1st of each month
+  workflow_dispatch: # can also be run by hand from the Actions tab
+
+permissions:
+  contents: write # push the update branch
+  pull-requests: write # open the pull request
+
+jobs:
+  update:
+    # Pinned so the Ubuntu 26 switch happens when we choose, not mid-release.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run data
+      - name: Check the new data
+        # Pull requests opened by this workflow don't start the normal CI, so run the checks here.
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+          npm run build:single
+      - name: Open a pull request if the data changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # KANJIDIC2 and JMdict are rebuilt daily, so their dates in sources.json always change.
+          # Only open a pull request when something else (the actual data) changed too.
+          changes=$(git diff -U0 -- src/data/generated | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -vE '"(kanjidic2|jmdict)":' || true)
+          if [ -z "$changes" ]; then
+            echo "The data has not changed."
+            exit 0
+          fi
+          branch="data/update-$(date -u +%Y-%m)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add src/data/generated
+          git commit -m "chore: update character data from KanjiVG, KANJIDIC2, JMdict and the JLPT lists"
+          git push --force origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore: monthly character data update ($(date -u +%Y-%m))" \
+            --body "Automatic monthly update of \`src/data/generated/\` (required by the KANJIDIC2 and JMdict licence). Typecheck, tests and both builds passed in the workflow. Review the changed characters, then merge." \
+            || echo "A pull request for this branch already exists; it was updated."

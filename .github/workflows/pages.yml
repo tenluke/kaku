@@ -1,0 +1,47 @@
+name: Website
+
+# After every change on main, build the website and publish it on GitHub Pages:
+#   https://tenluke.github.io/kaku/
+# One-time setup in the repository: Settings → Pages → Source → "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # also allows running it by hand from the Actions tab
+
+# Needed to publish to GitHub Pages; nothing in the repository is written.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# If two merges happen quickly, they are published one after the other. A publish that has
+# started is never cancelled, so the website is not left half updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
