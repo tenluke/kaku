@@ -1,14 +1,17 @@
 name: Single offline file
 
-# After every change on main, build the single offline file and publish it as the
-# "Latest build" release. Its download link never changes:
-#   https://github.com/tenluke/kaku/releases/download/latest/kaku.html
+# After every change on main, build the single offline file and publish it in two releases:
+# - "Latest build": always the newest file. Its download link never changes:
+#     https://github.com/tenluke/kaku/releases/download/latest/kaku.html
+# - "Version x.y.z": made once, the first time main has that version in package.json, and
+#   then kept, so older versions stay available.
+# The text of both lists the SHA-256 checksum of every published file.
 on:
   push:
     branches: [main]
   workflow_dispatch: # also allows running it by hand from the Actions tab
 
-# Needed to create the release; nothing else is written.
+# Needed to create the releases; nothing else is written.
 permissions:
   contents: write
 
@@ -30,18 +33,54 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build:single
-      - run: cp dist-single/index.html kaku.html
+      # Every file in release/ is published and gets a checksum.
+      - run: mkdir release && cp dist-single/index.html release/kaku.html
+      - name: Write the release text
+        id: text
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "Single offline file of 書く, version $version, built from commit ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d)."
+            echo
+            echo "Download kaku.html and open it in a browser: it works without internet."
+            echo "Progress is saved in the browser you open it with. Keep the file in one place; to move"
+            echo "progress (also to or from the website), use ⋯ → Backup & transfer."
+            echo
+            echo "### SHA-256 checksums"
+            echo
+            echo '```'
+            (cd release && sha256sum -- *)
+            echo '```'
+            echo
+            echo "To check a download, compare with the output of \`sha256sum kaku.html\` (Linux),"
+            echo "\`shasum -a 256 kaku.html\` (macOS) or \`Get-FileHash kaku.html\` (Windows PowerShell)."
+          } > release-notes.md
+          cat release-notes.md
       - name: Publish as the "latest" release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Replace the previous "latest" release, so the link always gives the newest file.
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest kaku.html \
+          gh release create latest release/* \
             --title "Latest build" \
             --target "$GITHUB_SHA" \
             --prerelease \
-            --notes "Single offline file of 書く, built from commit ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d).
-          Download kaku.html and open it in a browser: it works without internet.
-          Progress is saved in the browser you open it with. Keep the file in one place; to move
-          progress (also to or from the website), use ⋯ → Backup & transfer."
+            --notes-file release-notes.md
+      - name: Publish the version's own release, once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.text.outputs.version }}
+        run: |
+          # A version's release is never replaced, so its files and checksums stay as they were.
+          # To publish a new one, raise the version in package.json.
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "Release v$VERSION already exists: it is kept as it is."
+          else
+            gh release create "v$VERSION" release/* \
+              --title "Version $VERSION" \
+              --target "$GITHUB_SHA" \
+              --latest \
+              --notes-file release-notes.md
+          fi
