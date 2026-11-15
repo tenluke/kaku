@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  choiceOf,
   CURRENT_VERSION,
   defaultSettings,
   emptySavedData,
@@ -154,6 +155,23 @@ describe('readSavedData', () => {
       Trip: { on: true, sublists: ['Day 1'] },
       Weakest: { on: false, sublists: [] },
     });
+  });
+
+  it('keeps choices of lists named like built-in object entries', () => {
+    // Written as JSON text: in code, `{ __proto__: … }` would not make an entry of that name.
+    const text = `{"version":${CURRENT_VERSION},"settings":{"listChoices":{
+      "constructor":{"on":true,"sublists":["A"]},
+      "__proto__":{"on":true,"sublists":["B"]}}}}`;
+    const choices = readSavedData(text).data.settings.listChoices;
+    expect(choiceOf(choices, 'constructor')).toEqual({ on: true, sublists: ['A'] });
+    expect(choiceOf(choices, '__proto__')).toEqual({ on: true, sublists: ['B'] });
+    expect(Object.keys(choices).sort()).toEqual(['__proto__', 'constructor']);
+  });
+
+  it('has no choice for a list that was never chosen, whatever its name', () => {
+    for (const name of ['Trip', 'constructor', 'toString', '__proto__']) {
+      expect(choiceOf({}, name)).toBeUndefined();
+    }
   });
 
   it('moves version 1 data to version 2: old lists start fresh, progress and settings stay', () => {

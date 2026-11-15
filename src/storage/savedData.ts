@@ -249,6 +249,30 @@ export function readLists(value: unknown): MainList[] {
   return uniqueByName(lists).slice(0, MAX_MAIN_LISTS);
 }
 
+/*
+ * List choices are kept in an object under the list's name, and a list may be named anything.
+ * Every object also inherits a few entries, such as `constructor` and `toString`, and treats
+ * the name `__proto__` specially. So a choice is only read if the object has it itself, and is
+ * written as a plain entry whatever its name.
+ */
+export const choiceOf = (
+  choices: Record<string, ListChoice>,
+  listName: string,
+): ListChoice | undefined => (Object.hasOwn(choices, listName) ? choices[listName] : undefined);
+
+export function setChoice(
+  choices: Record<string, ListChoice>,
+  listName: string,
+  choice: ListChoice,
+): void {
+  Object.defineProperty(choices, listName, {
+    value: choice,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
 function readListChoices(value: unknown): Record<string, ListChoice> {
   const choices: Record<string, ListChoice> = {};
   if (!isObject(value)) return choices;
@@ -258,7 +282,10 @@ function readListChoices(value: unknown): Record<string, ListChoice> {
     const sublists = Array.isArray(raw.sublists)
       ? [...new Set(raw.sublists.map(readName).filter((n): n is string => n !== null))]
       : [];
-    choices[name] = { on: booleanOr(raw.on, false), sublists: sublists.slice(0, MAX_SUBLISTS) };
+    setChoice(choices, name, {
+      on: booleanOr(raw.on, false),
+      sublists: sublists.slice(0, MAX_SUBLISTS),
+    });
   }
   return choices;
 }

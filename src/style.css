@@ -322,6 +322,10 @@ input::-webkit-inner-spin-button {
   border-radius: 24px;
   cursor: crosshair;
 }
+/*
+ * While a finger is drawing (drawing.ts), the page cannot scroll. Only on touch-first devices:
+ * where scrollbars take up room, hiding one mid-stroke would shift the drawing sideways.
+ */
 @media (pointer: coarse) {
   html.drawing {
     overflow-y: hidden;
@@ -589,6 +593,11 @@ button {
 .col {
   min-width: 0;
 }
+/*
+ * Full width, not "as wide as the text": a browser that measures the text a fraction of a
+ * pixel wider than the box it gave it (Firefox, Brave) would cut a word that fits, showing
+ * "Kanji" as "Ka…".
+ */
 .st span {
   width: 100%;
   overflow: hidden;

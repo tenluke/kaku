@@ -231,10 +231,13 @@ function addPath(
   return path;
 }
 
+/** Extra dash length, in KanjiVG units (a character is 109 wide). */
 const DASH_SLACK = 2;
 
 /** Draws the path from start to end like a pen, over `seconds`, after `delay` seconds. */
 function animatePath(path: SVGPathElement, seconds: number, delay: number): void {
+  // A little longer than the path: some browsers (Firefox) draw the path slightly longer than
+  // they measure it, and the next dash then showed as a dot at the end of a waiting stroke.
   const length = path.getTotalLength() + DASH_SLACK;
   path.style.strokeDasharray = String(length);
   path.style.strokeDashoffset = String(length);
