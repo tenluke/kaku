@@ -1,0 +1,28 @@
+{
+  "kanjiVg": "r20260714",
+  "kanjidic2": "2026-11-10",
+  "jmdict": "2026-11-12",
+  "kanjiDataCommit": "00fd7079c3890f430759536f91aa5e854ec0ca4f",
+  "kanjiCount": {
+    "n5": 79,
+    "n4": 166,
+    "n3": 367,
+    "n2": 367,
+    "n1": 1232,
+    "rtk1NotInJlpt": 193
+  },
+  "wordCount": 18248,
+  "kanaWithoutStrokes": "",
+  "strokeCountMismatches": [
+    "辻: KANJIDIC2 5, KanjiVG 6",
+    "葛: KANJIDIC2 11, KanjiVG 12",
+    "謎: KANJIDIC2 16, KanjiVG 17",
+    "賭: KANJIDIC2 15, KanjiVG 16",
+    "遜: KANJIDIC2 13, KanjiVG 14",
+    "餌: KANJIDIC2 14, KanjiVG 15",
+    "餅: KANJIDIC2 14, KanjiVG 15",
+    "僅: KANJIDIC2 12, KanjiVG 13",
+    "牙: KANJIDIC2 5, KanjiVG 4",
+    "遡: KANJIDIC2 13, KanjiVG 14"
+  ]
+}

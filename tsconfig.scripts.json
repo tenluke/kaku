@@ -1,0 +1,11 @@
+{
+  // Settings for the Node.js scripts in scripts/. Node runs them directly: it removes the
+  // types itself, so they must only use TypeScript that can simply be erased.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["scripts"]
+}
