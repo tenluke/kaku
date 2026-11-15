@@ -67,6 +67,8 @@ The app is written in TypeScript and built with Vite. It uses no UI framework an
 
 GitHub Actions runs these checks on every pull request. After every change on `main`, it
 publishes the website on GitHub Pages and the single offline file as the "Latest build" release.
+Each version also gets its own release ("Version x.y.z"), which is kept, and every release lists
+the SHA-256 checksums of its files.
 
 The character data in `src/data/generated/` is made by `npm run data`. The files are committed,
 so you only need to run it to update the data. A workflow does this every month.
