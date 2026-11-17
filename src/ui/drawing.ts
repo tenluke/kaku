@@ -19,7 +19,11 @@ const color = (name: DrawColor): string =>
 const SMALL_KANA = new Set([...'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ']);
 // The smallest a box may get on screen (in CSS pixels) before boxes wrap to a new row.
 const MIN_BOX_PIXELS = 150;
-const MAX_STAGE_PIXELS = 720;
+// The largest a box gets on screen. The same for a single character, a digraph and each kana of a
+// word, so that switching between them does not change the size of what is drawn.
+const MAX_BOX_PIXELS = 320;
+// The room assumed for the drawing area if it cannot be measured (the narrow page's width).
+const FALLBACK_ROOM_PIXELS = 720;
 
 interface DrawnPoint {
   x: number;
@@ -116,10 +120,8 @@ function drawGuides(characterCount: number): void {
 
 /** How many boxes fit side by side on this screen. */
 function columnsFor(characterCount: number): number {
-  const available = Math.min(
-    MAX_STAGE_PIXELS,
-    stage.parentElement?.clientWidth || MAX_STAGE_PIXELS,
-  );
+  // The room the page gives the drawing area: more on a wide screen (style.css, `main`).
+  const available = stage.parentElement?.clientWidth || FALLBACK_ROOM_PIXELS;
   return Math.max(1, Math.min(characterCount, Math.floor(available / MIN_BOX_PIXELS)));
 }
 
@@ -147,7 +149,7 @@ export function resetDrawing(characters: readonly string[]): void {
   context.lineJoin = 'round';
   context.strokeStyle = color('ink');
   stage.style.aspectRatio = `${width} / ${height}`;
-  stage.style.maxWidth = count > 1 ? `${MAX_STAGE_PIXELS}px` : '400px';
+  stage.style.maxWidth = `${columns * MAX_BOX_PIXELS}px`;
   stage.classList.remove('done');
   overlay.setAttribute('viewBox', `0 0 ${width} ${height}`);
   overlay.replaceChildren();
