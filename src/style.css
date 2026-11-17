@@ -1114,15 +1114,61 @@ textarea {
   color: var(--bad);
 }
 
-/* Credits links in the footer: visible as links, but as quiet as the footer text */
-footer a {
+/* The footer's one button looks like a link, as quiet as the footer text. */
+.footer-link {
+  padding: 0;
+  border: 0;
+  background: none;
   color: inherit;
+  font: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
+  cursor: pointer;
 }
-footer a:hover,
-footer a:focus-visible {
+.footer-link:hover,
+.footer-link:focus-visible {
   color: var(--ink);
+}
+
+/*
+ * About & credits: wider than a question box, so the credits are not squeezed on a computer,
+ * and it scrolls inside itself when the screen is too short for it (phones).
+ */
+.dialog.about {
+  max-width: 620px;
+  max-height: 100%;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+.dialog.about h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+.dialog.about h3 {
+  margin: 18px 0 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.dialog.about p {
+  margin: 0 0 10px;
+}
+.dialog.about ul {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  line-height: 1.5;
+}
+.dialog.about li {
+  margin-bottom: 4px;
+}
+.dialog.about a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+.dialog.about a:hover,
+.dialog.about a:focus-visible {
+  color: var(--accent-soft);
 }
 
 /*

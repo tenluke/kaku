@@ -1,7 +1,7 @@
 {
   "name": "kaku",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Practise writing Japanese kana and kanji by drawing them from memory.",
   "license": "AGPL-3.0-or-later",
   "author": "Tenluke",
