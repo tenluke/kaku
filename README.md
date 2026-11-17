@@ -61,6 +61,7 @@ The app is written in TypeScript and built with Vite. It uses no UI framework an
 | `npm run format`       | Format all files with Prettier                              |
 | `npm run typecheck`    | Check the TypeScript types                                  |
 | `npm run audit`        | Check the tools for known security problems                 |
+| `npm run check`        | Run everything CI checks; do this before every push         |
 | `npm run build`        | Build the website into `dist/`                              |
 | `npm run build:single` | Build the single offline file into `dist-single/index.html` |
 | `npm run data`         | Download the sources again and rebuild the character data   |
@@ -68,7 +69,7 @@ The app is written in TypeScript and built with Vite. It uses no UI framework an
 GitHub Actions runs these checks on every pull request. After every change on `main`, it
 publishes the website on GitHub Pages and the single offline file as the "Latest build" release.
 Each version also gets its own release ("Version x.y.z"), which is kept, and every release lists
-the SHA-256 checksums of its files.
+the SHA-256 checksums of its files. Nothing is published unless `npm run check` passes.
 
 The character data in `src/data/generated/` is made by `npm run data`. The files are committed,
 so you only need to run it to update the data. A workflow does this every month.

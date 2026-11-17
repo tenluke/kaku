@@ -8,17 +8,23 @@ on:
     - cron: '23 4 1 * *' # 04:23 UTC on the 1st of each month
   workflow_dispatch: # can also be run by hand from the Actions tab
 
-permissions:
-  contents: write # push the update branch
-  pull-requests: write # open the pull request
+# Two jobs, so that the code from npm and the downloaded data never run with write access:
+# - update:  may only read the repository. Rebuilds the data, checks it, and hands it over.
+# - propose: may push a branch and open a pull request. Runs no code from the repository,
+#            only git and GitHub's own tool.
+permissions: {}
 
 jobs:
   update:
     # Pinned so the Ubuntu 26 switch happens when we choose, not mid-release.
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -31,17 +37,44 @@ jobs:
           npm test
           npm run build
           npm run build:single
-      - name: Open a pull request if the data changed
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: See whether the data changed
+        id: compare
         run: |
           # KANJIDIC2 and JMdict are rebuilt daily, so their dates in sources.json always change.
           # Only open a pull request when something else (the actual data) changed too.
           changes=$(git diff -U0 -- src/data/generated | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -vE '"(kanjidic2|jmdict)":' || true)
           if [ -z "$changes" ]; then
             echo "The data has not changed."
-            exit 0
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      # Hand the new data to the propose job.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.compare.outputs.changed == 'true'
+        with:
+          name: generated-data
+          path: src/data/generated/
+          if-no-files-found: error
+          retention-days: 1
+
+  propose:
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # push the update branch
+      pull-requests: write # open the pull request
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: generated-data
+          path: src/data/generated/
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           branch="data/update-$(date -u +%Y-%m)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
