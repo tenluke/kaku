@@ -118,6 +118,8 @@ function loadItem(): void {
   referenceStrokes = item.characters.flatMap((character, box) =>
     strokesOf(character).map((path) => ({ box, path })),
   );
+  // A word gets a wider page (style.css). Set first: the drawing area measures its room.
+  byId('practice-screen').classList.toggle('wide', Boolean(item.word));
   resetDrawing(item.characters);
   byId('script-label').textContent = scriptBadge(item);
   // The badge and the drawing area's frame take the script's colour (see style.css).

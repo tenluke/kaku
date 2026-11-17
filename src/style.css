@@ -100,6 +100,14 @@ main {
   max-width: 760px;
   padding: 16px;
 }
+/*
+ * A word gets more of a wide screen, so that even a long one fits in one row of large boxes
+ * (drawing.ts decides how many boxes fit; practice.ts sets `wide`). Everything else keeps the
+ * narrower width, which is easier to read.
+ */
+main:has(#practice-screen.wide:not([hidden])) {
+  max-width: 1100px;
+}
 .t {
   margin: 8px 0 10px;
   font-size: 1.8rem;
