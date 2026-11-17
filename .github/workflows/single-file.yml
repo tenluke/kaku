@@ -11,9 +11,13 @@ on:
     branches: [main]
   workflow_dispatch: # also allows running it by hand from the Actions tab
 
-# Needed to create the releases; nothing else is written.
-permissions:
-  contents: write
+# Nothing is published unless every check passes (`npm run check`: audit, format, lint, tests
+# and both builds).
+#
+# Two jobs, so that the code from npm and the build never run with write access:
+# - build:   may only read the repository. Installs, checks, builds, and hands over the files.
+# - publish: may write releases. Runs no code from the repository, only GitHub's release tool.
+permissions: {}
 
 # If two merges happen quickly, only the newest build is published.
 concurrency:
@@ -21,18 +25,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  publish:
+  build:
     # Pinned so the Ubuntu 26 switch happens when we choose, not mid-release.
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.text.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
-      - run: npm run build:single
+      - run: npm run check
       # Every file in release/ is published and gets a checksum.
       - run: mkdir release && cp dist-single/index.html release/kaku.html
       - name: Write the release text
@@ -57,9 +64,31 @@ jobs:
             echo "\`shasum -a 256 kaku.html\` (macOS) or \`Get-FileHash kaku.html\` (Windows PowerShell)."
           } > release-notes.md
           cat release-notes.md
+      # Hand the files to the publish job.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-files
+          path: |
+            release/
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the releases; nothing else is written
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # This job has no copy of the repository, so the release tool is told which one it is.
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-files
       - name: Publish as the "latest" release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           # Replace the previous "latest" release, so the link always gives the newest file.
           gh release delete latest --yes --cleanup-tag || true
@@ -69,9 +98,6 @@ jobs:
             --prerelease \
             --notes-file release-notes.md
       - name: Publish the version's own release, once
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.text.outputs.version }}
         run: |
           # A version's release is never replaced, so its files and checksums stay as they were.
           # To publish a new one, raise the version in package.json.

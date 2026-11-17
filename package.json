@@ -27,6 +27,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
     "audit": "npm audit --audit-level=low",
+    "check": "npm run audit && npm run format:check && npm run lint && npm test && npm run build && npm run build:single",
     "data": "node scripts/data/build-data.ts"
   },
   "devDependencies": {
