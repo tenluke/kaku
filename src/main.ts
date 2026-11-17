@@ -25,8 +25,8 @@ import {
   setStartLoading,
   showSetup,
 } from './ui/setup';
-import { aboutText, TEXT, versionLabel } from './ui/text';
-import { APP_VERSION } from './ui/version';
+import { closeAbout, initAbout, isAboutOpen, openAbout } from './ui/about';
+import { TEXT } from './ui/text';
 
 /* Starts the app and connects the screens. */
 
@@ -51,6 +51,10 @@ function endSession(results: SessionResult[]): void {
 
 function onKeyDown(event: KeyboardEvent): void {
   if (event.key === 'Escape') closeMoreMenu();
+  if (isAboutOpen()) {
+    if (event.key === 'Escape') closeAbout();
+    return;
+  }
   if (isDialogOpen()) {
     if (event.key === 'Escape') closeDialogWithEscape();
     if (event.key === 'Enter') {
@@ -87,10 +91,10 @@ onDataChangedInOtherTab(() => {
   if (!byId('progress-screen').hidden) showProgress();
   else if (!byId('backup-screen').hidden) showBackup();
 });
-byId('app-version').textContent = versionLabel(APP_VERSION);
+initAbout();
 byId('open-about').addEventListener('click', () => {
   closeMoreMenu();
-  askConfirmation(aboutText(APP_VERSION), TEXT.close);
+  openAbout();
 });
 document.addEventListener('keydown', onKeyDown);
 // Buttons give up focus after a click, so the Space/Enter shortcuts don't press them again.

@@ -109,24 +109,9 @@ export const TEXT = {
   none: 'None',
   passedWithHints: 'passed with hints',
   skippedShort: 'skipped',
-  about:
-    'App code © 2026 Tenluke, free software under the GNU Affero General Public ' +
-    'License, version 3 or later (AGPL-3.0-or-later); the source code is at github.com/tenluke/kaku. The character data is not ours: stroke data ' +
-    'from KanjiVG © Ulrich Apel (CC BY-SA 3.0), converted for this app; kanji meanings, readings and ' +
-    'stroke counts from KANJIDIC2 © James William Breen and the Electronic Dictionary Research and ' +
-    'Development Group (CC BY-SA 4.0); words and their meanings from JMdict, by the same group under the ' +
-    'same licence, shortened for this app; JLPT levels from Jonathan Waller’s lists via kanji-data. ' +
-    'Remembering the Kanji frame numbers (6th edition) also come from KANJIDIC2. The app can be used ' +
-    'alongside Remembering the Kanji by James W. Heisig; it is not affiliated with the author or ' +
-    'publisher and contains none of the book’s text. ' +
-    'Links to all sources and licences are at the bottom of the page. Your data stays on this device.',
 } as const;
 
-/** The About box: the app's name and version, then the licence and credits. */
-export const aboutText = (version: string): string =>
-  `書く (Kaku), version ${version}. ${TEXT.about}`;
-
-/** The app's name and version at the start of the footer. */
+/** The app's name and version, in the footer and as the title of the About box. */
 export const versionLabel = (version: string): string => `書く (Kaku) ${version}`;
 
 export const pickerGroupTitle = (group: PickerGroup): string =>
