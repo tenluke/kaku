@@ -3,6 +3,7 @@ import kanjiRecords from '../data/generated/kanji.json';
 import strokesKana from '../data/generated/strokes-kana.json';
 import {
   kanaItems,
+  kanaRows,
   kanjiItem,
   kanjiPrompt,
   sessionItems,
@@ -24,6 +25,33 @@ describe('kana items', () => {
       prompt: 'kya',
     });
     expect(kanaItems('katakana', 'digraph').map((item) => item.prompt)).toContain('jo');
+  });
+
+  it('splits each set into the rows of the kana table', () => {
+    const rowsAsText = (set: (typeof KANA_SETS)[number]) =>
+      kanaRows('hiragana', set).map((row) => row.map((item) => item.characters.join('')).join(''));
+    expect(rowsAsText('basic')).toEqual([
+      ...['あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの'],
+      ...['はひふへほ', 'まみむめも', 'やゆよ', 'らりるれろ', 'わをん'],
+    ]);
+    expect(rowsAsText('voiced')).toEqual([
+      ...['がぎぐげご', 'ざじずぜぞ', 'だぢづでど', 'ばびぶべぼ', 'ぱぴぷぺぽ'],
+    ]);
+    expect(rowsAsText('digraph').slice(0, 2)).toEqual(['きゃきゅきょ', 'しゃしゅしょ']);
+    expect(kanaRows('katakana', 'digraph')).toHaveLength(11);
+  });
+
+  it('keeps the table order when the rows are put together again', () => {
+    expect(
+      kanaItems('hiragana', 'basic')
+        .map((item) => item.characters.join(''))
+        .join(''),
+    ).toBe(
+      'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん',
+    );
+    for (const set of KANA_SETS) {
+      expect(kanaRows('katakana', set).flat()).toEqual(kanaItems('katakana', set));
+    }
   });
 
   it('makes katakana from hiragana', () => {

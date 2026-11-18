@@ -295,6 +295,15 @@ input::-webkit-inner-spin-button {
   font-size: 0.9rem;
   margin: 8px 0;
 }
+/*
+ * The end-session button (.end-x) sits in the top right corner, over the first 28px of the
+ * content (16px + 36px from the edge, minus the card's 24px padding). The progress bar and the
+ * line below it stop short of it, with a 10px gap.
+ */
+#progress-bar,
+.mt {
+  margin-right: 38px;
+}
 #prompt {
   text-align: center;
   margin: 6px 0 10px;
@@ -484,6 +493,22 @@ input::-webkit-inner-spin-button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/*
+ * Kana: each row of the kana table (あいうえお, かきくけこ…) is a block of 5 columns, so rows
+ * never break in the middle and shorter rows (やゆよ) keep the columns lined up. Blocks sit side
+ * by side when there is room: two per line on a computer, one on a phone. The bigger gap
+ * between blocks keeps the rows apart. Kanji use .tiles above and are not affected.
+ */
+.kana-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 6px 18px;
+}
+.kana-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
 }
 .tl.off {
   border-color: var(--ln);

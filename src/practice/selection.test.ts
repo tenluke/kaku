@@ -58,6 +58,19 @@ describe('pickerGroups', () => {
       ['n3', 367],
     ]);
   });
+
+  it('splits kana, and only kana, into the rows of the kana table', () => {
+    const selection = defaultSelection();
+    selection.kanaSets.hiragana.voiced = true;
+    const [hiragana] = pickerGroups('kana', selection, sources);
+    expect(hiragana?.rows?.map((row) => row[0]?.prompt)).toEqual([
+      ...['a', 'ka', 'sa', 'ta', 'na', 'ha', 'ma', 'ya', 'ra', 'wa'],
+      ...['ga', 'za', 'da', 'ba', 'pa'],
+    ]);
+    expect(hiragana?.rows?.flat()).toEqual(hiragana?.items);
+    for (const group of pickerGroups('kanji', selection, sources))
+      expect(group.rows).toBeUndefined();
+  });
 });
 
 describe('the Lists tab with saved lists', () => {
