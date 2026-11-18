@@ -1,7 +1,7 @@
 import {
   DIGRAPH_BASES,
-  HIRAGANA_BASIC,
-  HIRAGANA_VOICED,
+  HIRAGANA_BASIC_ROWS,
+  HIRAGANA_VOICED_ROWS,
   SMALL_YA_YU_YO,
   type KanaEntry,
 } from '../data/kana';
@@ -63,18 +63,25 @@ function kanaItem(
   return { id: makeId(script, characters), script, characters, prompt, kanaSet };
 }
 
-/** All kana items of one script and set, in the usual table order. */
-export function kanaItems(script: 'hiragana' | 'katakana', kanaSet: KanaSet): PracticeItem[] {
-  const single = (entries: readonly KanaEntry[]) =>
-    entries.map((entry) => kanaItem(script, kanaSet, [entry.kana], entry.romaji));
-  if (kanaSet === 'basic') return single(HIRAGANA_BASIC);
-  if (kanaSet === 'voiced') return single(HIRAGANA_VOICED);
-  return DIGRAPH_BASES.flatMap((base) =>
+/**
+ * All kana items of one script and set, split into the rows of the kana table: the あ row,
+ * the か row, …; for digraphs one row per base kana (きゃ きゅ きょ).
+ */
+export function kanaRows(script: 'hiragana' | 'katakana', kanaSet: KanaSet): PracticeItem[][] {
+  const single = (rows: readonly (readonly KanaEntry[])[]) =>
+    rows.map((row) => row.map((entry) => kanaItem(script, kanaSet, [entry.kana], entry.romaji)));
+  if (kanaSet === 'basic') return single(HIRAGANA_BASIC_ROWS);
+  if (kanaSet === 'voiced') return single(HIRAGANA_VOICED_ROWS);
+  return DIGRAPH_BASES.map((base) =>
     SMALL_YA_YU_YO.map((small) =>
       kanaItem(script, kanaSet, [base.kana, small.kana], base.romaji + small.romaji),
     ),
   );
 }
+
+/** All kana items of one script and set, in the usual table order. */
+export const kanaItems = (script: 'hiragana' | 'katakana', kanaSet: KanaSet): PracticeItem[] =>
+  kanaRows(script, kanaSet).flat();
 
 const PROMPT_MEANINGS = 2;
 

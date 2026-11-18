@@ -108,20 +108,26 @@ function renderToggles(): void {
   byId('words-mode').hidden = tab !== 'kana';
 }
 
+/** One button of the character picker; a pressed button means the character is practised. */
+function pickerTile(item: PracticeItem, isOn: boolean): string {
+  return `<button class="tl${isOn ? '' : ' off'}" data-item="${escapeHtml(item.id)}" aria-pressed="${isOn}"><b>${escapeHtml(item.characters.join(''))}</b><small>${escapeHtml(item.prompt)}</small></button>`;
+}
+
 function renderPicker(): void {
   const groups = pickerGroups(tab, selection, sources());
   const excluded = selection.excluded[tab];
+  const tilesOf = (items: readonly PracticeItem[]) =>
+    items.map((item) => pickerTile(item, !excluded.has(item.id))).join('');
   picker.innerHTML =
     groups
       .map((group) => {
         const chosen = group.items.filter((item) => !excluded.has(item.id)).length;
-        const tiles = group.items
-          .map((item) => {
-            const isOn = !excluded.has(item.id);
-            return `<button class="tl${isOn ? '' : ' off'}" data-item="${escapeHtml(item.id)}" aria-pressed="${isOn}"><b>${escapeHtml(item.characters.join(''))}</b><small>${escapeHtml(item.prompt)}</small></button>`;
-          })
-          .join('');
-        return `<div class="pg"><div class="ph"><b>${escapeHtml(pickerGroupTitle(group))}</b><span>${chosen} / ${group.items.length}</span><button class="c sm" data-group="${group.key}" data-include="1">${TEXT.all}</button><button class="c sm" data-group="${group.key}" data-include="0">${TEXT.none}</button></div><div class="tiles">${tiles}</div></div>`;
+        // Kana: one block per row of the kana table; the blocks sit side by side when there is
+        // room (see .kana-rows in style.css). Kanji: one grid that fills every line.
+        const tiles = group.rows
+          ? `<div class="kana-rows">${group.rows.map((row) => `<div class="kana-row">${tilesOf(row)}</div>`).join('')}</div>`
+          : `<div class="tiles">${tilesOf(group.items)}</div>`;
+        return `<div class="pg"><div class="ph"><b>${escapeHtml(pickerGroupTitle(group))}</b><span>${chosen} / ${group.items.length}</span><button class="c sm" data-group="${group.key}" data-include="1">${TEXT.all}</button><button class="c sm" data-group="${group.key}" data-include="0">${TEXT.none}</button></div>${tiles}</div>`;
       })
       .join('') ||
     `<p class="note">${tab === 'custom' ? TEXT.chooseList : TEXT.nothingSelected}</p>`;

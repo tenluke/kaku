@@ -16,15 +16,35 @@ const pair = (kana: string, romaji: string): KanaEntry[] => {
   }));
 };
 
-export const HIRAGANA_BASIC: readonly KanaEntry[] = pair(
-  'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん',
-  'a i u e o ka ki ku ke ko sa shi su se so ta chi tsu te to na ni nu ne no ha hi fu he ho ma mi mu me mo ya yu yo ra ri ru re ro wa wo n',
-);
+/**
+ * The basic kana, one row of the kana table each (あ row, か row, …). The character picker
+ * shows each row on its own line. ん shares the わ row's line, as in many kana charts.
+ */
+export const HIRAGANA_BASIC_ROWS: readonly (readonly KanaEntry[])[] = [
+  pair('あいうえお', 'a i u e o'),
+  pair('かきくけこ', 'ka ki ku ke ko'),
+  pair('さしすせそ', 'sa shi su se so'),
+  pair('たちつてと', 'ta chi tsu te to'),
+  pair('なにぬねの', 'na ni nu ne no'),
+  pair('はひふへほ', 'ha hi fu he ho'),
+  pair('まみむめも', 'ma mi mu me mo'),
+  pair('やゆよ', 'ya yu yo'),
+  pair('らりるれろ', 'ra ri ru re ro'),
+  pair('わをん', 'wa wo n'),
+];
 
-export const HIRAGANA_VOICED: readonly KanaEntry[] = pair(
-  'がぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ',
-  'ga gi gu ge go za ji zu ze zo da ji zu de do ba bi bu be bo pa pi pu pe po',
-);
+export const HIRAGANA_BASIC: readonly KanaEntry[] = HIRAGANA_BASIC_ROWS.flat();
+
+/** The voiced kana (with ゛ or ゜), one row of the kana table each (が row, ざ row, …). */
+export const HIRAGANA_VOICED_ROWS: readonly (readonly KanaEntry[])[] = [
+  pair('がぎぐげご', 'ga gi gu ge go'),
+  pair('ざじずぜぞ', 'za ji zu ze zo'),
+  pair('だぢづでど', 'da ji zu de do'),
+  pair('ばびぶべぼ', 'ba bi bu be bo'),
+  pair('ぱぴぷぺぽ', 'pa pi pu pe po'),
+];
+
+export const HIRAGANA_VOICED: readonly KanaEntry[] = HIRAGANA_VOICED_ROWS.flat();
 
 /** Digraphs: one of these kana + small ゃ, ゅ or ょ, e.g. き + ゃ = きゃ (kya). */
 export const DIGRAPH_BASES: readonly KanaEntry[] = pair(

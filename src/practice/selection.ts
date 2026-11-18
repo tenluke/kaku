@@ -12,6 +12,7 @@ import {
   KANA_SCRIPTS,
   KANA_SETS,
   kanaItems,
+  kanaRows,
   type KanaScript,
   kanjiItem,
   type JlptLevel,
@@ -80,6 +81,8 @@ export interface PickerGroup {
   /** Shown instead of the usual group name (for book groups and saved sublists). */
   title?: { book: BookId; group: string } | { list: string; sublist: string };
   items: PracticeItem[];
+  /** Kana only: `items` split into the rows of the kana table, each shown on its own line. */
+  rows?: PracticeItem[][];
 }
 
 const recordsByCharacter = new WeakMap<readonly KanjiRecord[], Map<string, KanjiRecord>>();
@@ -150,12 +153,12 @@ export function pickerGroups(tab: SetupTab, selection: Selection, sources: Sourc
   if (tab === 'custom')
     return [...bookGroups(selection, sources), ...savedListGroups(selection, sources)];
   if (tab === 'kana') {
-    return KANA_SCRIPTS.filter((script) => selection.scripts[script]).map((script) => ({
-      key: script,
-      items: KANA_SETS.filter((set) => selection.kanaSets[script][set]).flatMap((set) =>
-        kanaItems(script, set),
-      ),
-    }));
+    return KANA_SCRIPTS.filter((script) => selection.scripts[script]).map((script) => {
+      const rows = KANA_SETS.filter((set) => selection.kanaSets[script][set]).flatMap((set) =>
+        kanaRows(script, set),
+      );
+      return { key: script, items: rows.flat(), rows };
+    });
   }
   return JLPT_LEVELS.filter((level) => selection.levels[level]).map((level) => ({
     key: `n${level}` as const,
