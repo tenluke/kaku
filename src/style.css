@@ -295,6 +295,15 @@ input::-webkit-inner-spin-button {
   font-size: 0.9rem;
   margin: 8px 0;
 }
+/*
+ * The end-session button (.end-x) sits in the top right corner, over the first 28px of the
+ * content (16px + 36px from the edge, minus the card's 24px padding). The progress bar and the
+ * line below it stop short of it, with a 10px gap.
+ */
+#progress-bar,
+.mt {
+  margin-right: 38px;
+}
 #prompt {
   text-align: center;
   margin: 6px 0 10px;
