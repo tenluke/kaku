@@ -41,6 +41,23 @@ async function start(items: PracticeItem[]): Promise<void> {
   }
 }
 
+/*
+ * What "Again" on the results screen starts: the same kind of session as the one just done.
+ * A session from the Kana, Kanji or Lists tab is drawn again from its settings (a new random
+ * set in Random mode). "Practise weakest" and "Retry failed ones" repeat the same characters,
+ * shuffled again: without this, "Again" fell back to the setup tab's characters.
+ */
+let itemsForAgain: () => PracticeItem[] = newSessionItems;
+
+/** Starts a session and remembers how to start it again. */
+function startRepeatable(itemsFor: () => PracticeItem[]): Promise<void> {
+  itemsForAgain = itemsFor;
+  return start(itemsFor());
+}
+
+/** For a fixed set of characters: each new session shuffles them again. */
+const sameCharacters = (items: readonly PracticeItem[]) => () => shuffled(items);
+
 function endSession(results: SessionResult[]): void {
   // Results are final here ("I was right" can only be pressed before moving on).
   store.data.passRates = recordResults(store.data.passRates, passRateResults(results), Date.now());
@@ -70,14 +87,17 @@ function onKeyDown(event: KeyboardEvent): void {
 addAppIcons();
 initTheme(); // first, so the page shows its colours as early as possible
 initMenu();
-initSetup(start);
+initSetup((items) => {
+  itemsForAgain = newSessionItems;
+  void start(items);
+});
 initPractice(endSession);
 initResults(
-  (failedItems) => start(shuffled(failedItems)),
-  () => start(newSessionItems()),
+  (failedItems) => startRepeatable(sameCharacters(failedItems)),
+  () => start(itemsForAgain()),
   () => showSetup(),
 );
-initProgress((weakItems) => start(shuffled(weakItems)));
+initProgress((weakItems) => startRepeatable(sameCharacters(weakItems)));
 // After an import or "Delete all data", the settings (and so the theme) may have changed.
 initBackup(() => {
   reloadSettings();
