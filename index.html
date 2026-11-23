@@ -110,6 +110,16 @@
           <div class="l">Saved lists</div>
           <div class="sets" id="custom-sets"></div>
         </div>
+        <!-- Flashcards: only on tabs that have them (setup.ts), and Ask for only where it applies. -->
+        <div id="exercise-row">
+          <div class="l">Exercise</div>
+          <div class="row">
+            <div class="seg" role="group" aria-label="Exercise">
+              <button class="c on" data-exercise="write" aria-pressed="true">Write</button
+              ><button class="c" data-exercise="flashcards" aria-pressed="false">Flashcards</button>
+            </div>
+          </div>
+        </div>
         <div class="l">Mode</div>
         <div class="row">
           <div class="seg" role="group" aria-label="Mode">
@@ -128,6 +138,15 @@
               min="1"
               aria-label="Number of symbols"
             /><button id="count-plus" aria-label="More">+</button>
+          </div>
+        </div>
+        <div id="ask-for-row" hidden>
+          <div class="l">Ask for</div>
+          <div class="row">
+            <div class="seg" role="group" aria-label="Ask for">
+              <button class="c" data-ask-for="meaning" aria-pressed="false">Meaning</button
+              ><button class="c on" data-ask-for="reading" aria-pressed="true">Reading</button>
+            </div>
           </div>
         </div>
         <div class="l">Pick characters <small class="opt">(optional)</small></div>
@@ -163,10 +182,30 @@
           ><button class="go" id="start-button">Start practice</button>
         </div>
         <p class="note warning" id="storage-note" role="status" hidden></p>
-        <p class="note">
+        <p class="note" id="write-note">
           Draw in the correct stroke order and direction. 70% or more passes, you get 3 tries, and a
           hint counts as failed. Shortcuts: Enter/Space = check, H = hint, Esc = end session.
         </p>
+        <p class="note" id="cards-note" hidden>
+          Pick the right answer of four. A card you get wrong comes back until you get it right.
+          Flashcards have their own results; they don't change your writing pass rates. Shortcuts:
+          1–4 = answer, Enter/Space = next, Esc = end session.
+        </p>
+      </section>
+
+      <section id="cards-screen" class="p session" hidden aria-label="Flashcards">
+        <button id="end-cards-button" class="end-x" aria-label="End session">✕</button>
+        <div class="progress-bar" id="cards-progress-bar"><i id="cards-progress-fill"></i></div>
+        <div class="mt">
+          <span id="cards-progress-text"></span><span id="cards-mode-text"></span>
+        </div>
+        <div class="prompt"><small class="script-label" id="cards-script-label"></small></div>
+        <div class="card-face" id="card-face" lang="ja"></div>
+        <p class="card-question" id="card-question"></p>
+        <div class="card-options" id="card-options" role="group" aria-label="Answers"></div>
+        <div class="card-verdict" id="card-verdict" role="status" aria-live="polite"></div>
+        <div class="card-info" id="card-info" hidden></div>
+        <button class="go card-next" id="card-next" hidden>Next →</button>
       </section>
 
       <section id="practice-screen" class="p" hidden aria-label="Practice">
@@ -250,6 +289,8 @@
             Saved lists<small id="export-count-lists"></small></button
           ><button class="c" data-backup-group="export" data-part="passRates">
             Pass rates<small id="export-count-passRates"></small></button
+          ><button class="c" data-backup-group="export" data-part="cardRates">
+            Flashcard results<small id="export-count-cardRates"></small></button
           ><button class="c" data-backup-group="export" data-part="settings">Settings</button>
         </div>
         <div class="row">
@@ -274,6 +315,8 @@
           <div class="row" role="group" aria-label="What to import">
             <button class="c" data-backup-group="import" data-part="lists">Saved lists</button
             ><button class="c" data-backup-group="import" data-part="passRates">Pass rates</button
+            ><button class="c" data-backup-group="import" data-part="cardRates">
+              Flashcard results</button
             ><button class="c" data-backup-group="import" data-part="settings">Settings</button>
           </div>
           <div class="row">

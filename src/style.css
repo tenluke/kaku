@@ -274,13 +274,15 @@ input::-webkit-inner-spin-button {
 .go:disabled {
   opacity: 0.4;
 }
-#progress-bar {
+#progress-bar,
+#cards-progress-bar {
   height: 10px;
   background: var(--ln);
   border-radius: 5px;
   overflow: hidden;
 }
-#progress-bar i {
+#progress-bar i,
+#cards-progress-bar i {
   display: block;
   height: 100%;
   width: 0;
@@ -301,10 +303,12 @@ input::-webkit-inner-spin-button {
  * line below it stop short of it, with a 10px gap.
  */
 #progress-bar,
+#cards-progress-bar,
 .mt {
   margin-right: 38px;
 }
-#prompt {
+#prompt,
+#cards-screen .prompt {
   text-align: center;
   margin: 6px 0 10px;
 }
@@ -438,10 +442,15 @@ input::-webkit-inner-spin-button {
   border-bottom: 2px solid var(--ln);
 }
 .g {
+  flex: none;
   font-size: 2.4rem;
   color: var(--red);
   min-width: 70px;
   text-align: center;
+  white-space: nowrap; /* a word on one line; .word makes it smaller so it fits */
+}
+.g.word {
+  font-size: 1.6rem;
 }
 .c.sm {
   padding: 4px 12px;
@@ -607,7 +616,8 @@ button {
 }
 
 /* End-session X */
-#practice-screen {
+#practice-screen,
+#cards-screen {
   position: relative;
 }
 .end-x {
@@ -817,7 +827,8 @@ button {
 
 /* Script badge above the prompt. Each script has its own colour, which the drawing area's
    frame repeats, so a mixed hiragana + katakana session shows clearly what to write. */
-#prompt #script-label {
+#prompt #script-label,
+#cards-script-label {
   display: inline-block;
   margin-bottom: 6px;
   padding: 4px 12px;
@@ -828,16 +839,20 @@ button {
   letter-spacing: 0.08em;
   text-transform: none;
 }
-#practice-screen[data-script='hiragana'] {
+#practice-screen[data-script='hiragana'],
+#cards-screen[data-script='hiragana'] {
   --script: var(--hiragana);
 }
-#practice-screen[data-script='katakana'] {
+#practice-screen[data-script='katakana'],
+#cards-screen[data-script='katakana'] {
   --script: var(--katakana);
 }
-#practice-screen[data-script='kanji'] {
+#practice-screen[data-script='kanji'],
+#cards-screen[data-script='kanji'] {
   --script: var(--kanji);
 }
-#practice-screen[data-script] #script-label {
+#practice-screen[data-script] #script-label,
+#cards-screen[data-script] #cards-script-label {
   color: var(--script);
   background: color-mix(in srgb, var(--script) 12%, transparent);
 }
@@ -1347,4 +1362,118 @@ textarea {
   .theme-icon {
     transition: none;
   }
+}
+
+/*
+ * Flashcards: the character or word large in a card (in the place of the drawing area), four
+ * answers below, then the verdict and what is worth knowing about the card.
+ */
+.card-face {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  max-width: 420px;
+  margin: 6px auto 14px;
+  padding: 10px;
+  border: 2px solid color-mix(in srgb, var(--script, var(--red)) 55%, transparent);
+  border-radius: 24px;
+  background: var(--bg);
+  font-size: 110px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-align: center;
+}
+/*
+ * A word stays on one line: the font size follows the card's width divided by the number of
+ * characters (--chars, set by src/ui/cards.ts), up to 80px. 100cqi is the screen's width.
+ */
+#cards-screen {
+  container-type: inline-size;
+}
+.card-face.word {
+  font-size: min(80px, calc(min(100cqi, 420px) * 0.8 / var(--chars, 4)));
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.card-question {
+  margin: 0 0 12px;
+  text-align: center;
+  color: var(--dim);
+}
+.card-question small {
+  display: block;
+  margin-top: 4px;
+  color: var(--red);
+  font-weight: 600;
+}
+.card-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.card-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 2px solid var(--ln);
+  border-radius: 16px;
+  background: var(--hi);
+  font-size: 1.05rem;
+  text-align: left;
+}
+.card-option kbd {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--ln);
+  border-radius: 7px;
+  background: var(--pn);
+  color: var(--dim);
+  font:
+    600 0.75rem system-ui,
+    sans-serif;
+}
+.card-option.right {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--hi));
+}
+.card-option.wrong {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, var(--hi));
+}
+.card-option.faded {
+  opacity: 0.45;
+}
+.card-verdict {
+  min-height: 1.6em;
+  margin: 12px 0 0;
+  text-align: center;
+  font-weight: 700;
+}
+.card-verdict.right {
+  color: var(--ok);
+}
+.card-verdict.wrong {
+  color: var(--bad);
+}
+.card-info {
+  max-width: 560px;
+  margin: 12px auto 0;
+  padding: 12px 16px;
+  border: 2px dashed var(--ln);
+  border-radius: 16px;
+  background: var(--hi);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.card-next {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 14px auto 0;
 }

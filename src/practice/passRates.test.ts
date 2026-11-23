@@ -8,6 +8,7 @@ import {
   weakest,
   weakestFirst,
 } from './passRates';
+import { isCardRateId } from '../storage/savedData';
 
 describe('recordResults', () => {
   it('counts sessions and passes and keeps the last 10 results', () => {
@@ -25,6 +26,20 @@ describe('recordResults', () => {
     const after = recordResults(before, [{ id: 'nonsense', passed: true }], 1);
     expect(after).toEqual({});
     expect(recordResults(before, [{ id: 'hiragana:あ', passed: true }], 1)).not.toBe(before);
+  });
+
+  it('keeps flashcard ids when given the flashcard id check', () => {
+    const results = [
+      { id: 'reading:hiragana:あ', passed: true },
+      { id: 'meaning:word:ねこ', passed: false },
+      { id: 'hiragana:あ', passed: true },
+    ];
+    expect(Object.keys(recordResults({}, results, 1, isCardRateId))).toEqual([
+      'reading:hiragana:あ',
+      'meaning:word:ねこ',
+    ]);
+    // Without it, flashcard ids are not character ids and are dropped.
+    expect(Object.keys(recordResults({}, results, 1))).toEqual(['hiragana:あ']);
   });
 });
 

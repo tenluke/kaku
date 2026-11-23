@@ -1,5 +1,6 @@
 import { mergeLists } from '../practice/customLists';
 import {
+  readCardRates,
   readLists,
   readPassRates,
   readSettings,
@@ -23,8 +24,8 @@ const BACKUP_APP = 'kaku';
 export const BACKUP_FORMAT = 2;
 export const MAX_BACKUP_LENGTH = 5_000_000; // characters; a real backup is far smaller
 
-export type BackupPart = 'lists' | 'passRates' | 'settings';
-export const BACKUP_PARTS: readonly BackupPart[] = ['lists', 'passRates', 'settings'];
+export type BackupPart = 'lists' | 'passRates' | 'cardRates' | 'settings';
+export const BACKUP_PARTS: readonly BackupPart[] = ['lists', 'passRates', 'cardRates', 'settings'];
 
 export function buildBackup(data: SavedData, parts: readonly BackupPart[], now: Date): string {
   const backup: Record<string, unknown> = {
@@ -40,6 +41,8 @@ export interface ParsedBackup {
   exportedAt: string; // the day it was made, e.g. "2026-11-11", or "" if unknown
   lists?: MainList[];
   passRates?: Record<string, PassRateEntry>;
+  /** Flashcard results. Added without a new format: older apps simply ignore them. */
+  cardRates?: Record<string, PassRateEntry>;
   settings?: SavedSettings;
   skipped: number; // entries left out because they were broken or unknown
 }
@@ -98,9 +101,14 @@ export function parseBackup(
     backup.skipped += Object.keys(raw.passRates).length - Object.keys(rates).length;
     if (Object.keys(rates).length) backup.passRates = rates;
   }
+  if (isObject(raw.cardRates)) {
+    const rates = readCardRates(raw.cardRates);
+    backup.skipped += Object.keys(raw.cardRates).length - Object.keys(rates).length;
+    if (Object.keys(rates).length) backup.cardRates = rates;
+  }
   if (isObject(raw.settings)) backup.settings = readSettings(raw.settings);
 
-  if (!backup.lists && !backup.passRates && !backup.settings) {
+  if (!backup.lists && !backup.passRates && !backup.cardRates && !backup.settings) {
     return { ok: false, error: 'nothingUsable' };
   }
   return { ok: true, backup };
@@ -141,6 +149,12 @@ export function applyBackup(
       mode === 'replace'
         ? { ...backup.passRates }
         : mergePassRates(data.passRates, backup.passRates);
+  }
+  if (parts.includes('cardRates') && backup.cardRates) {
+    next.cardRates =
+      mode === 'replace'
+        ? { ...backup.cardRates }
+        : mergePassRates(data.cardRates, backup.cardRates);
   }
   if (parts.includes('settings') && backup.settings) next.settings = backup.settings;
   // Choices of main lists that are gone after the import are forgotten.

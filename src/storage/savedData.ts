@@ -25,6 +25,9 @@ import { BOOKS, type BookId } from '../practice/books';
 export const CURRENT_VERSION = 2;
 
 export type PracticeMode = 'all' | 'random' | 'words';
+/** Write: draw from memory (the practice so far). Flashcards: pick the meaning or reading. */
+export type Exercise = 'write' | 'flashcards';
+export type AskFor = 'meaning' | 'reading';
 export type Theme = 'light' | 'dark';
 const PRACTICE_MODES: readonly PracticeMode[] = ['all', 'random', 'words'];
 
@@ -43,6 +46,9 @@ export interface SavedSettings {
   bookChoices: Record<BookId, BookChoice>;
   /** Light or dark look; null until the first visit takes it from the browser (theme.ts). */
   theme: Theme | null;
+  exercise: Exercise;
+  /** Flashcards: ask for the meaning or the reading (single kana always ask for the reading). */
+  askFor: AskFor;
 }
 
 /** A main list's choice: whether it is on, and the chosen sublists (by name). */
@@ -81,6 +87,11 @@ export interface SavedData {
   settings: SavedSettings;
   passRates: Record<string, PassRateEntry>;
   lists: MainList[];
+  /**
+   * Flashcard results, kept apart from the writing pass rates: recognising and writing are
+   * different skills. Keyed by what was asked about which item, e.g. "reading:hiragana:あ".
+   */
+  cardRates: Record<string, PassRateEntry>;
 }
 
 export const RECENT_RESULTS_KEPT = 10;
@@ -107,6 +118,8 @@ export function defaultSettings(): SavedSettings {
     count: 20,
     bookChoices: { rtk1: { on: false, groups: [] } },
     theme: null,
+    exercise: 'write',
+    askFor: 'reading',
   };
 }
 
@@ -115,6 +128,7 @@ export const emptySavedData = (): SavedData => ({
   settings: defaultSettings(),
   passRates: {},
   lists: [],
+  cardRates: {},
 });
 
 // ----- Reading untrusted data: every value is checked, anything odd falls back -----
@@ -174,6 +188,8 @@ export function readSettings(value: unknown): SavedSettings {
         : fallback.count,
     bookChoices: readBookChoices(value.bookChoices),
     theme: value.theme === 'light' || value.theme === 'dark' ? value.theme : null,
+    exercise: value.exercise === 'flashcards' ? 'flashcards' : 'write',
+    askFor: value.askFor === 'meaning' ? 'meaning' : 'reading',
   };
 }
 
@@ -215,6 +231,27 @@ export function readPassRates(value: unknown): Record<string, PassRateEntry> {
   for (const [id, raw] of Object.entries(value)) {
     const entry = readPassRateEntry(raw);
     if (entry && VALID_ITEM_ID.test(id)) rates[id] = entry;
+  }
+  return rates;
+}
+
+// A word in flashcards: "word:かお" or "word:毎日".
+const VALID_WORD_ID = /^word:[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}ー]{1,20}$/u;
+const VALID_CARD_ID = /^(meaning|reading):(.+)$/;
+
+/** A flashcard result's key: what was asked about which character or word ("reading:word:ねこ"). */
+export function isCardRateId(id: string): boolean {
+  const itemId = VALID_CARD_ID.exec(id)?.[2] ?? '';
+  return VALID_ITEM_ID.test(itemId) || VALID_WORD_ID.test(itemId);
+}
+
+/** Flashcard results: entries with an unknown key or a broken entry are dropped. */
+export function readCardRates(value: unknown): Record<string, PassRateEntry> {
+  const rates: Record<string, PassRateEntry> = {};
+  if (!isObject(value)) return rates;
+  for (const [id, raw] of Object.entries(value)) {
+    const entry = readPassRateEntry(raw);
+    if (entry && isCardRateId(id)) rates[id] = entry;
   }
   return rates;
 }
@@ -291,6 +328,9 @@ function readListChoices(value: unknown): Record<string, ListChoice> {
 }
 
 /*
+ * (The settings `exercise` and `askFor`, and `cardRates`, were added with defaults, which needs
+ * no new version: older saved data reads as "write", "reading" and no flashcard results.)
+ *
  * One step per old version: MIGRATIONS[n] turns version n data into version n + 1.
  * - 1 → 2: saved lists became main lists with sublists. Starting the lists fresh was agreed
  *   (before the first release); pass rates and settings are kept.
@@ -333,6 +373,7 @@ export function readSavedData(text: string | null): ReadResult {
       settings: readSettings(record.settings),
       passRates: readPassRates(record.passRates),
       lists: readLists(record.lists),
+      cardRates: readCardRates(record.cardRates),
     },
   };
 }

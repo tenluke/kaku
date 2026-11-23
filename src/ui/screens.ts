@@ -6,10 +6,16 @@ import { byId } from './dom';
  */
 
 export type ScreenId =
-  'setup-screen' | 'practice-screen' | 'results-screen' | 'progress-screen' | 'backup-screen';
+  | 'setup-screen'
+  | 'practice-screen'
+  | 'cards-screen'
+  | 'results-screen'
+  | 'progress-screen'
+  | 'backup-screen';
 const SCREENS: readonly ScreenId[] = [
   'setup-screen',
   'practice-screen',
+  'cards-screen',
   'results-screen',
   'progress-screen',
   'backup-screen',
@@ -20,7 +26,8 @@ const moreMenu = byId('more-menu');
 
 export function showScreen(screen: ScreenId): void {
   for (const id of SCREENS) byId(id).hidden = id !== screen;
-  byId('topbar').hidden = screen === 'practice-screen';
+  // During a session the menu is hidden: you leave with the screen's own ✕ button.
+  byId('topbar').hidden = screen === 'practice-screen' || screen === 'cards-screen';
   closeMoreMenu();
 }
 

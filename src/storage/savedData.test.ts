@@ -54,6 +54,8 @@ describe('readSavedData', () => {
       excluded: { kana: ['hiragana:あ'], kanji: [], custom: [] },
       bookChoices: defaultSettings().bookChoices,
       theme: null,
+      exercise: 'write',
+      askFor: 'reading',
     });
   });
 
@@ -212,5 +214,31 @@ describe('VALID_ITEM_ID and the real data', () => {
       ...kanji.map(kanjiItem),
     ].map((item) => item.id);
     expect(ids.filter((id) => !VALID_ITEM_ID.test(id))).toEqual([]);
+  });
+
+  it('reads the flashcard settings and results, dropping broken entries', () => {
+    const settings = { ...defaultSettings(), exercise: 'flashcards', askFor: 'meaning' };
+    const entry = { seen: 2, passed: 1, recent: '01', lastSeen: 5 };
+    const cardRates = {
+      'reading:hiragana:あ': entry,
+      'meaning:word:かお': entry,
+      'meaning:word:毎日': entry,
+      'drawing:hiragana:あ': entry, // not something a card asks for
+      'reading:nonsense:x': entry, // not an item
+      'reading:hiragana:い': { seen: -1 }, // broken
+    };
+    const data = readSavedData(saved({ settings, cardRates })).data;
+    expect(data.settings).toMatchObject({ exercise: 'flashcards', askFor: 'meaning' });
+    expect(Object.keys(data.cardRates)).toEqual([
+      'reading:hiragana:あ',
+      'meaning:word:かお',
+      'meaning:word:毎日',
+    ]);
+  });
+
+  it('gives older saved data the flashcard defaults', () => {
+    const data = readSavedData(saved({ settings: { tab: 'kanji' } })).data;
+    expect(data.settings).toMatchObject({ exercise: 'write', askFor: 'reading' });
+    expect(data.cardRates).toEqual({});
   });
 });

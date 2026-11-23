@@ -1,5 +1,14 @@
 import { ALL_KANJI } from '../practice/kanjiData';
-import { sessionItems, type JlptLevel, type KanaSet, type PracticeItem } from '../practice/items';
+import {
+  KANA_SCRIPTS,
+  KANA_SETS,
+  kanaItems,
+  sessionItems,
+  shuffled,
+  type JlptLevel,
+  type KanaSet,
+  type PracticeItem,
+} from '../practice/items';
 import {
   JLPT_LEVELS,
   pickerGroups,
@@ -16,7 +25,7 @@ import { loadedWords, loadWords } from '../practice/wordData';
 import { BOOK_GROUPS, initBooks, renderBooks } from './bookLists';
 import { kanjiWordItem, kanjiWordsUsing } from '../practice/kanjiWords';
 import { pickWords, wordItem, wordsUsing, type Word } from '../practice/words';
-import type { PracticeMode, SavedSettings, SubList } from '../storage/savedData';
+import type { AskFor, Exercise, PracticeMode, SavedSettings, SubList } from '../storage/savedData';
 import { store } from './appStore';
 import { byId, escapeHtml, flashMessage, showLastingMessage } from './dom';
 import { initSavedLists, renderSavedLists } from './savedLists';
@@ -43,6 +52,8 @@ const saved = store.data.settings;
 const selection: Selection = selectionFromSettings(saved);
 let tab: SetupTab = saved.tab;
 let mode: PracticeMode = saved.mode;
+let exercise: Exercise = saved.exercise;
+let askFor: AskFor = saved.askFor;
 let wordsFailed = false; // the word list could not be loaded
 
 const COUNT_STEP = 5;
@@ -65,6 +76,26 @@ const pool = (): PracticeItem[] => practicePool(tab, selection, sources());
 /** Words mode is on the Kana and Kanji tabs; the Lists tab practises at random instead. */
 const hasWordsMode = (): boolean => tab === 'kana' || tab === 'kanji';
 const currentMode = (): PracticeMode => (mode === 'words' && !hasWordsMode() ? 'random' : mode);
+
+/** Flashcards are on the Kana tab for now; the Kanji and Lists tabs only write. */
+const flashcardsOffered = (): boolean => tab === 'kana';
+const currentExercise = (): Exercise => (flashcardsOffered() ? exercise : 'write');
+/** Meaning or reading is only a choice for words: a single kana is always asked by reading. */
+const asksForChoice = (): boolean =>
+  currentExercise() === 'flashcards' && currentMode() === 'words';
+
+/** What the start button starts: writing, or flashcards asking for a meaning or reading. */
+export interface SessionKind {
+  exercise: Exercise;
+  askFor: AskFor;
+}
+export const currentSessionKind = (): SessionKind => ({
+  exercise: currentExercise(),
+  askFor: asksForChoice() ? askFor : 'reading',
+});
+
+const startLabel = (): string =>
+  currentExercise() === 'flashcards' ? TEXT.startFlashcards : TEXT.startPractice;
 
 /**
  * The words the selection allows, or null while the word list is loading: on the Kana tab
@@ -115,6 +146,18 @@ function renderToggles(): void {
     setPressed(button, button.dataset.mode === currentMode());
   });
   byId('words-mode').hidden = !hasWordsMode();
+  document.querySelectorAll<HTMLElement>('[data-exercise]').forEach((button) => {
+    setPressed(button, button.dataset.exercise === currentExercise());
+  });
+  document.querySelectorAll<HTMLElement>('[data-ask-for]').forEach((button) => {
+    setPressed(button, button.dataset.askFor === askFor);
+  });
+  // Each setting is only shown where it does something.
+  byId('exercise-row').hidden = !flashcardsOffered();
+  byId('ask-for-row').hidden = !asksForChoice();
+  byId('write-note').hidden = currentExercise() !== 'write';
+  byId('cards-note').hidden = currentExercise() !== 'flashcards';
+  startButton.textContent = startLabel();
 }
 
 /** One button of the character picker; a pressed button means the character is practised. */
@@ -190,6 +233,8 @@ function saveSettings(): void {
       custom: [...selection.excluded.custom],
     },
     mode,
+    exercise,
+    askFor,
     count: Math.max(1, Math.floor(Number(countInput.value)) || 1),
     bookChoices: structuredClone(selection.bookChoices),
     theme: store.data.settings.theme, // changed by the theme switch, not here
@@ -374,6 +419,10 @@ export function initSetup(onStart: (items: PracticeItem[]) => void): void {
       selection.levels[level] = !selection.levels[level];
     } else if (button.dataset.mode) {
       mode = button.dataset.mode as PracticeMode;
+    } else if (button.dataset.exercise) {
+      exercise = button.dataset.exercise as Exercise;
+    } else if (button.dataset.askFor) {
+      askFor = button.dataset.askFor as AskFor;
     } else return;
     render();
     ensureWordsLoaded();
@@ -413,6 +462,8 @@ export function reloadSettings(): void {
   Object.assign(selection, selectionFromSettings(settings));
   tab = settings.tab;
   mode = settings.mode;
+  exercise = settings.exercise;
+  askFor = settings.askFor;
   countInput.value = String(settings.count);
   showLastingMessage(byId('list-status'), '');
 }
@@ -428,8 +479,24 @@ export function newSessionItems(): PracticeItem[] {
   return sessionItems(pool(), modeNow, count);
 }
 
+// Enough words to find plausible wrong answers, without building cards from thousands.
+const WORD_POOL_SIZE = 200;
+
+/**
+ * Items that lend flashcards their wrong answers: other words of the selection (or any words if
+ * there are too few), or every kana, so look-alikes are there even if they aren't selected.
+ */
+export function flashcardPool(): PracticeItem[] {
+  if (currentMode() === 'words') {
+    const chosen = availableWords() ?? [];
+    const words = chosen.length >= 4 ? chosen : (loadedWords() ?? []);
+    return shuffled(words).slice(0, WORD_POOL_SIZE).map(wordItem);
+  }
+  return KANA_SCRIPTS.flatMap((script) => KANA_SETS.flatMap((set) => kanaItems(script, set)));
+}
+
 /** Shows "Loading…" on the start button while kanji stroke data downloads. */
 export function setStartLoading(isLoading: boolean): void {
   startButton.disabled = isLoading || availableCount() === 0;
-  startButton.textContent = isLoading ? TEXT.loading : TEXT.startPractice;
+  startButton.textContent = isLoading ? TEXT.loading : startLabel();
 }

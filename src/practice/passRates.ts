@@ -7,15 +7,21 @@ import { RECENT_RESULTS_KEPT, VALID_ITEM_ID, type PassRateEntry } from '../stora
 
 export type PassRates = Record<string, PassRateEntry>;
 
-/** Adds one session's results. Returns a new object; the old one is not changed. */
+const isItemId = (id: string): boolean => VALID_ITEM_ID.test(id);
+
+/**
+ * Adds one session's results. Returns a new object; the old one is not changed. `isValidId`
+ * keeps out what saved data would throw away: character ids, or flashcard ids for cardRates.
+ */
 export function recordResults(
   rates: PassRates,
   results: readonly { id: string; passed: boolean }[],
   now: number,
+  isValidId: (id: string) => boolean = isItemId,
 ): PassRates {
   const next = { ...rates };
   for (const { id, passed } of results) {
-    if (!VALID_ITEM_ID.test(id)) continue;
+    if (!isValidId(id)) continue;
     const entry = next[id] ?? { seen: 0, passed: 0, recent: '', lastSeen: 0 };
     next[id] = {
       seen: entry.seen + 1,

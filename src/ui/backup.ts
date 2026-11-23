@@ -20,6 +20,7 @@ import { backupSummary, importedText, TEXT } from './text';
 const PART_NAMES: Record<BackupPart, string> = {
   lists: 'saved lists',
   passRates: 'pass rates',
+  cardRates: 'flashcard results',
   settings: 'settings',
 };
 
@@ -38,6 +39,7 @@ function renderToggles(): void {
     store.data.lists.reduce((count, list) => count + list.sublists.length, 0),
   );
   byId('export-count-passRates').textContent = String(Object.keys(store.data.passRates).length);
+  byId('export-count-cardRates').textContent = String(Object.keys(store.data.cardRates).length);
   document.querySelectorAll<HTMLElement>('[data-backup-group]').forEach((button) => {
     const part = button.dataset.part as BackupPart;
     const chosen = button.dataset.backupGroup === 'export' ? exportParts : importParts;
@@ -101,6 +103,7 @@ function readBackupText(text: string): void {
     backup.exportedAt,
     (backup.lists ?? []).reduce((count, list) => count + list.sublists.length, 0),
     Object.keys(backup.passRates ?? {}).length,
+    Object.keys(backup.cardRates ?? {}).length,
     backup.settings !== undefined,
     backup.skipped,
   );
