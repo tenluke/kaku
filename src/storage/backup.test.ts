@@ -124,3 +124,30 @@ describe('applyBackup', () => {
     expect(next.settings.listChoices).toEqual({});
   });
 });
+
+describe('flashcard results in backups', () => {
+  it('round-trip, and merge like pass rates (more history wins)', () => {
+    const data = { ...myData(), cardRates: { 'reading:hiragana:あ': entry(3, 10) } };
+    const parsed = parseBackup(buildBackup(data, ['cardRates'], new Date()), known);
+    expect(parsed.ok && parsed.backup.cardRates).toEqual({ 'reading:hiragana:あ': entry(3, 10) });
+    const backup = {
+      exportedAt: '',
+      cardRates: { 'reading:hiragana:あ': entry(5, 1) },
+      skipped: 0,
+    };
+    expect(applyBackup(data, backup, ['cardRates'], 'merge').cardRates).toEqual({
+      'reading:hiragana:あ': entry(5, 1),
+    });
+    expect(applyBackup(data, backup, ['passRates'], 'merge').cardRates).toEqual(data.cardRates);
+  });
+
+  it('leave out and count broken entries', () => {
+    const text = JSON.stringify({
+      app: 'kaku',
+      format: 2,
+      cardRates: { 'reading:hiragana:い': entry(1, 1), 'oops:hiragana:い': entry(1, 1) },
+    });
+    const parsed = parseBackup(text, known);
+    expect(parsed.ok && parsed.backup.skipped).toBe(1);
+  });
+});

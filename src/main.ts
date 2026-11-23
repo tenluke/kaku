@@ -1,6 +1,7 @@
 import './style.css';
 import { shuffled, type PracticeItem } from './practice/items';
 import { recordResults } from './practice/passRates';
+import { isCardRateId } from './storage/savedData';
 import { onDataChangedInOtherTab, store } from './ui/appStore';
 import { askConfirmation, closeDialogWithEscape, confirmDialog, isDialogOpen } from './ui/dialog';
 import { byId } from './ui/dom';
@@ -12,25 +13,41 @@ import {
   type SessionResult,
 } from './ui/practice';
 import { initBackup, showBackup } from './ui/backup';
+import { handleCardsKey, initCards, startCards, type CardsOutcome } from './ui/cards';
 import { addAppIcons } from './ui/icons';
 import { initProgress, showProgress } from './ui/progress';
 import { initResults, showResults } from './ui/results';
 import { closeMoreMenu, initMenu } from './ui/screens';
 import { applySavedTheme, initTheme } from './ui/theme';
 import {
+  currentSessionKind,
+  flashcardPool,
   initSetup,
   newSessionItems,
   refreshSetupFromStorage,
   reloadSettings,
   setStartLoading,
   showSetup,
+  type SessionKind,
 } from './ui/setup';
 import { closeAbout, initAbout, isAboutOpen, openAbout } from './ui/about';
 import { TEXT } from './ui/text';
 
 /* Starts the app and connects the screens. */
 
-async function start(items: PracticeItem[]): Promise<void> {
+const WRITING: SessionKind = { exercise: 'write', askFor: 'reading' };
+
+/** The kind of the last session, so "Again" and "Retry failed ones" start the same kind. */
+let lastKind: SessionKind = WRITING;
+// Wrong answers for flashcards come from here; kept for "Again" and "Retry failed ones".
+let lastPool: PracticeItem[] = [];
+
+async function start(items: PracticeItem[], kind: SessionKind = lastKind): Promise<void> {
+  lastKind = kind;
+  if (kind.exercise === 'flashcards') {
+    startCards(items, kind.askFor, lastPool);
+    return;
+  }
   setStartLoading(true);
   try {
     await startSession(items);
@@ -50,9 +67,9 @@ async function start(items: PracticeItem[]): Promise<void> {
 let itemsForAgain: () => PracticeItem[] = newSessionItems;
 
 /** Starts a session and remembers how to start it again. */
-function startRepeatable(itemsFor: () => PracticeItem[]): Promise<void> {
+function startRepeatable(itemsFor: () => PracticeItem[], kind?: SessionKind): Promise<void> {
   itemsForAgain = itemsFor;
-  return start(itemsFor());
+  return start(itemsFor(), kind);
 }
 
 /** For a fixed set of characters: each new session shuffles them again. */
@@ -63,6 +80,14 @@ function endSession(results: SessionResult[]): void {
   store.data.passRates = recordResults(store.data.passRates, passRateResults(results), Date.now());
   store.save();
   if (results.length) showResults(results);
+  else showSetup();
+}
+
+function endCards({ results, rates }: CardsOutcome): void {
+  // Flashcard results are kept apart from writing: picking an answer is easier than writing it.
+  store.data.cardRates = recordResults(store.data.cardRates, rates, Date.now(), isCardRateId);
+  store.save();
+  if (results.length) showResults(results, true);
   else showSetup();
 }
 
@@ -82,6 +107,7 @@ function onKeyDown(event: KeyboardEvent): void {
   }
   const typing = event.target instanceof HTMLInputElement;
   if (!byId('practice-screen').hidden && !typing) handlePracticeKey(event);
+  else if (!byId('cards-screen').hidden) handleCardsKey(event);
 }
 
 addAppIcons();
@@ -89,15 +115,18 @@ initTheme(); // first, so the page shows its colours as early as possible
 initMenu();
 initSetup((items) => {
   itemsForAgain = newSessionItems;
-  void start(items);
+  lastPool = flashcardPool();
+  void start(items, currentSessionKind());
 });
 initPractice(endSession);
+initCards(endCards);
 initResults(
   (failedItems) => startRepeatable(sameCharacters(failedItems)),
   () => start(itemsForAgain()),
   () => showSetup(),
 );
-initProgress((weakItems) => startRepeatable(sameCharacters(weakItems)));
+// Progress shows writing results, so "Practise weakest" writes.
+initProgress((weakItems) => startRepeatable(sameCharacters(weakItems), WRITING));
 // After an import or "Delete all data", the settings (and so the theme) may have changed.
 initBackup(() => {
   reloadSettings();

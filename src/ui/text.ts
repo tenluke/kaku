@@ -99,8 +99,21 @@ export const TEXT = {
       notJson: 'This is not a valid backup: it could not be read.',
       notOurs: 'This was not made by this app.',
       newer: 'This backup comes from a newer version of the app. Update the app first.',
-      nothingUsable: 'This backup has no lists, pass rates or settings that can be used.',
+      nothingUsable:
+        'This backup has no lists, pass rates, flashcard results or settings that can be used.',
     },
+  },
+  startFlashcards: 'Start flashcards',
+  // Flashcards
+  cards: {
+    question: { meaning: 'What does it mean?', reading: 'How is it read?' },
+    mode: { meaning: 'Flashcards · Meaning', reading: 'Flashcards · Reading' },
+    once: 'Once more: this one was wrong before.',
+    right: '✓ Correct',
+    wrong: '✗ Incorrect',
+    leaveQuestion: 'End the flashcards? Cards you have answered count; the others don’t.',
+    end: 'End',
+    looksLike: 'Looks like',
   },
   noFailed: 'No failed symbols — excellent! 🎉',
   nothingSelected: 'Nothing selected yet.',
@@ -185,6 +198,7 @@ export function backupSummary(
   exportedAt: string,
   lists: number,
   rates: number,
+  cardRates: number,
   hasSettings: boolean,
   skipped: number,
 ): string {
@@ -192,6 +206,7 @@ export function backupSummary(
   const parts: string[] = [];
   if (lists) parts.push(`${lists} list(s)`);
   if (rates) parts.push(`${rates} character(s) with pass rates`);
+  if (cardRates) parts.push(`${cardRates} flashcard result(s)`);
   if (hasSettings) parts.push('settings');
   return (
     `Backup${exportedAt ? ` from ${exportedAt}` : ''}: ${parts.join(', ')}.` +
@@ -251,8 +266,19 @@ export const readingsText = (
   kunReadings: readonly string[],
 ): string => `On: ${onReadings.join(', ') || '–'} · Kun: ${kunReadings.join(', ') || '–'}`;
 
-export function summaryText(summary: SessionSummary): string {
-  let text = `${summary.passed} of ${summary.total} passed · average accuracy ${summary.averagePercent}%`;
+/** Flashcards are only right or wrong, so their average accuracy would just repeat the score. */
+export function summaryText(summary: SessionSummary, cards = false): string {
+  let text = `${summary.passed} of ${summary.total} passed`;
+  if (!cards) text += ` · average accuracy ${summary.averagePercent}%`;
   if (summary.markedCorrect) text += ` · ${summary.markedCorrect} marked correct by you`;
   return text;
 }
+
+// ----- Flashcards -----
+
+export const cardProgressText = (done: number, total: number): string =>
+  `${Math.min(done + 1, total)} / ${total}`;
+
+/** After answering, e.g. "✗ Not this time: シ is “shi”." */
+export const cardVerdictText = (right: boolean, face: string, answer: string): string =>
+  `${right ? TEXT.cards.right : TEXT.cards.wrong}: ${face} is “${answer}”.`;
