@@ -31,7 +31,9 @@ Your progress is saved in the browser you use, separately for the website and fo
 
 ## Run it from the source code
 
-You need [Node.js](https://nodejs.org/) 22.18 or newer and [Git](https://git-scm.com/).
+You need [Node.js](https://nodejs.org/) 24 or newer and [Git](https://git-scm.com/). Node.js 24
+comes with npm 11, which is needed to add or update packages (npm 10 fails on the current test
+tool).
 
 ```bash
 git clone https://github.com/tenluke/kaku.git
