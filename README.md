@@ -9,7 +9,8 @@ It runs entirely in your browser. There is no account, and your data stays on yo
 
 - **Kana**: hiragana and katakana, including the voiced sounds and the digraphs.
 - **Kanji**: the JLPT levels N5 to N1.
-- **Words**: write real words made only of the kana you selected.
+- **Words**: write real words made only of the kana you selected, or (on the Kanji tab) written
+  with the kanji you selected; a kanji word shows its reading and meaning.
 - **Hints**: first the number of strokes, then the strokes one by one, in the right order.
 - **Lists**: save your own lists of characters, in main lists with sublists.
 - **Books**: follow _Remembering the Kanji_ 1 (6th edition) in frame order.
