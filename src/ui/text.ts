@@ -206,6 +206,9 @@ export const selectionSummary = (count: number): string => `${count} symbols in 
 export const wordsSummary = (words: number, kana: number): string =>
   `${words} ${words === 1 ? 'word uses' : 'words use'} only these ${kana} kana`;
 
+export const kanjiWordsSummary = (words: number, kanji: number): string =>
+  `${words} ${words === 1 ? 'word uses' : 'words use'} only these ${kanji} kanji (and kana)`;
+
 /** The stroke count told by the first press of Hint; digraphs list each character. */
 export const strokeCountText = (counts: readonly number[]): string => {
   const total = counts.reduce((sum, count) => sum + count, 0);

@@ -1,5 +1,6 @@
 import kanaStrokes from '../data/generated/strokes-kana.json';
 import type { JlptLevel, PracticeItem } from './items';
+import { ALL_KANJI } from './kanjiData';
 
 /*
  * Stroke paths for every character. Kana are small and always loaded. Kanji strokes are
@@ -35,10 +36,20 @@ async function loadExtra(): Promise<void> {
   extraLoaded = true;
 }
 
-/** Makes sure the stroke data of all these items is loaded. */
+// The JLPT level of each kanji (null: RTK Book 1 only), to find the file its strokes are in.
+const LEVEL_OF = new Map(ALL_KANJI.map((record) => [record.character, record.jlpt]));
+const HAN = /\p{Script=Han}/u;
+
+/**
+ * Makes sure the stroke data of all these items is loaded. Looks at every kanji of an item,
+ * because a word (Kanji tab, Words mode) can use kanji from several levels.
+ */
 export async function loadStrokesFor(items: readonly PracticeItem[]): Promise<void> {
-  const levels = new Set(items.flatMap((item) => (item.jlpt ? [item.jlpt] : [])));
-  const needsExtra = items.some((item) => item.script === 'kanji' && !item.jlpt);
+  const kanji = items.flatMap((item) => item.characters.filter((c) => HAN.test(c)));
+  const levels = new Set(
+    kanji.flatMap((c) => (LEVEL_OF.get(c) ? [LEVEL_OF.get(c) as JlptLevel] : [])),
+  );
+  const needsExtra = kanji.some((c) => !LEVEL_OF.get(c));
   await Promise.all([...[...levels].map(loadLevel), ...(needsExtra ? [loadExtra()] : [])]);
 }
 

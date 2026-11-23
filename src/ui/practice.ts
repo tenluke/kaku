@@ -14,6 +14,7 @@ import {
 import { nextHintStep } from '../practice/hint';
 import type { PracticeItem } from '../practice/items';
 import { loadStrokesFor, strokesOf } from '../practice/strokeData';
+import { kanjiResults } from '../practice/kanjiWords';
 import { kanaResults, romaji } from '../practice/words';
 import { askConfirmation } from './dialog';
 import { byId, escapeHtml } from './dom';
@@ -62,11 +63,15 @@ export interface SessionResult {
  * its kana's (a word itself has no pass rate).
  */
 export const passRateResults = (results: readonly SessionResult[]) =>
-  results.flatMap(({ item, result, boxes }) =>
-    item.word
-      ? kanaResults(item.word.kana, result, boxes?.percents ?? [], boxes?.hinted ?? new Set())
-      : [{ id: item.id, passed: result.passed }],
-  );
+  results.flatMap(({ item, result, boxes }) => {
+    if (!item.word) return [{ id: item.id, passed: result.passed }];
+    const percents = boxes?.percents ?? [];
+    const hinted = boxes?.hinted ?? new Set<number>();
+    // A word from the Kanji tab counts for its kanji, one from the Kana tab for its kana.
+    return item.script === 'kanji'
+      ? kanjiResults(item.characters, result, percents, hinted)
+      : kanaResults(item.word.kana, result, percents, hinted);
+  });
 
 let items: PracticeItem[] = [];
 let index = 0;
@@ -124,9 +129,12 @@ function loadItem(): void {
   byId('script-label').textContent = scriptBadge(item);
   // The badge and the drawing area's frame take the script's colour (see style.css).
   byId('practice-screen').dataset.script = item.script;
-  // A word: what to write (romaji) big, its meaning smaller below.
+  // A word: what to write big (romaji for a kana word, the reading in kana for a kanji word),
+  // its meaning smaller below.
+  const wordPrompt =
+    item.word && (item.script === 'kanji' ? item.word.kana : romaji(item.word.kana));
   byId('prompt-text').innerHTML = item.word
-    ? `${escapeHtml(romaji(item.word.kana))}<small class="prompt-meaning">${escapeHtml(item.word.meaning)}</small>`
+    ? `${escapeHtml(wordPrompt ?? '')}<small class="prompt-meaning">${escapeHtml(item.word.meaning)}</small>`
     : escapeHtml(item.prompt);
   byId('progress-text').textContent = progressLabel(index, items.length);
   setProgress(index);
@@ -140,6 +148,7 @@ function loadItem(): void {
 function scriptBadge(item: PracticeItem): string {
   if (item.script !== 'kanji')
     return `${TEXT.scriptBadge[item.script]}${item.word ? TEXT.wordBadge : ''}`;
+  if (item.word) return `${TEXT.scriptBadge.kanji}${TEXT.wordBadge}`;
   if (item.jlpt) return `${TEXT.scriptBadge.kanji} · N${item.jlpt}`;
   return `${TEXT.scriptBadge.kanji}${item.rtkFrame ? ` · RTK ${item.rtkFrame}` : ''}`;
 }

@@ -36,7 +36,7 @@ export interface SavedSettings {
   kanaSets: Record<KanaScript, Record<KanaSet, boolean>>;
   levels: Record<JlptLevel, boolean>;
   excluded: Record<SetupTab, string[]>;
-  /** "words" is only offered on the Kana tab; the other tabs treat it as "random". */
+  /** "words" is offered on the Kana and Kanji tabs; the Lists tab treats it as "random". */
   mode: PracticeMode;
   count: number;
   /** Lists tab: which books are chosen, and which of their groups (by position). */

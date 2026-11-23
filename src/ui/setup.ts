@@ -14,6 +14,7 @@ import {
 import { editTabFor, idsOutsideTab, saveSublist } from '../practice/customLists';
 import { loadedWords, loadWords } from '../practice/wordData';
 import { BOOK_GROUPS, initBooks, renderBooks } from './bookLists';
+import { kanjiWordItem, kanjiWordsUsing } from '../practice/kanjiWords';
 import { pickWords, wordItem, wordsUsing, type Word } from '../practice/words';
 import type { PracticeMode, SavedSettings, SubList } from '../storage/savedData';
 import { store } from './appStore';
@@ -27,12 +28,13 @@ import {
   pickerToggleLabel,
   selectionSummary,
   TEXT,
+  kanjiWordsSummary,
   wordsSummary,
 } from './text';
 
 /*
- * The setup screen: Kana, Kanji and Lists tabs, mode (All / Random, and Words on the Kana
- * tab), the character picker, and saving the picked characters as a sublist of a main list.
+ * The setup screen: Kana, Kanji and Lists tabs, mode (All / Random, and Words on the Kana and
+ * Kanji tabs), the character picker, and saving the picked characters as a sublist of a main list.
  */
 
 const kanji = ALL_KANJI;
@@ -60,13 +62,20 @@ const jlptKanjiIds = new Set(kanji.filter((r) => r.jlpt).map((r) => `kanji:${r.c
 const kanjiTabShows = (id: string) => jlptKanjiIds.has(id);
 const pool = (): PracticeItem[] => practicePool(tab, selection, sources());
 
-/** Words mode is only on the Kana tab; the other tabs practise at random instead. */
-const currentMode = (): PracticeMode => (mode === 'words' && tab !== 'kana' ? 'random' : mode);
+/** Words mode is on the Kana and Kanji tabs; the Lists tab practises at random instead. */
+const hasWordsMode = (): boolean => tab === 'kana' || tab === 'kanji';
+const currentMode = (): PracticeMode => (mode === 'words' && !hasWordsMode() ? 'random' : mode);
 
-/** The words made of the selected kana, or null while the word list is loading. */
+/**
+ * The words the selection allows, or null while the word list is loading: on the Kana tab
+ * words made of the selected kana, on the Kanji tab words written with the selected kanji.
+ */
 function availableWords(): Word[] | null {
   const words = loadedWords();
   if (!words) return null;
+  if (tab === 'kanji') {
+    return kanjiWordsUsing(words, new Set(pool().flatMap((item) => item.characters)));
+  }
   return wordsUsing(words, new Set(pool().map((item) => item.id)));
 }
 
@@ -105,7 +114,7 @@ function renderToggles(): void {
   document.querySelectorAll<HTMLElement>('[data-mode]').forEach((button) => {
     setPressed(button, button.dataset.mode === currentMode());
   });
-  byId('words-mode').hidden = tab !== 'kana';
+  byId('words-mode').hidden = !hasWordsMode();
 }
 
 /** One button of the character picker; a pressed button means the character is practised. */
@@ -158,7 +167,10 @@ function render(save = true): void {
 function summaryText(words: Word[] | null, selected: number): string {
   if (currentMode() !== 'words') return selectionSummary(selected);
   if (wordsFailed) return TEXT.wordsLoadFailed;
-  return words ? wordsSummary(words.length, selected) : TEXT.loadingWords;
+  if (!words) return TEXT.loadingWords;
+  return tab === 'kanji'
+    ? kanjiWordsSummary(words.length, selected)
+    : wordsSummary(words.length, selected);
 }
 
 /** Remembers the current choices, so the app opens the same way next time. */
@@ -409,7 +421,10 @@ export function reloadSettings(): void {
 export function newSessionItems(): PracticeItem[] {
   const count = Number(countInput.value);
   const modeNow = currentMode();
-  if (modeNow === 'words') return pickWords(availableWords() ?? [], count).map(wordItem);
+  if (modeNow === 'words') {
+    const words = pickWords(availableWords() ?? [], count);
+    return words.map(tab === 'kanji' ? kanjiWordItem : wordItem);
+  }
   return sessionItems(pool(), modeNow, count);
 }
 
