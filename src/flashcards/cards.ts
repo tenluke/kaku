@@ -40,16 +40,64 @@ const isKanaCharacter = (item: PracticeItem): boolean => !item.word && item.scri
 export const askedFor = (item: PracticeItem, askFor: AskFor): AskFor =>
   isKanaCharacter(item) ? 'reading' : askFor;
 
-/** The right answer of a card. A kana word's reading is written in romaji. */
-function answerOf(item: PracticeItem, askFor: AskFor): string {
-  if (!item.word) return item.prompt; // a single kana: its romaji
-  return askFor === 'meaning' ? item.word.meaning : romaji(item.word.kana);
+/** How many on and kun readings a kanji's answer shows: the main ones, so answers stay short. */
+export const MAIN_READINGS = 2;
+
+/**
+ * A kun reading as shown on a card: KANJIDIC marks the okurigana with a dot (た.べる) and
+ * prefix and suffix forms with a dash (ひと-, -び). The okurigana go in brackets: た(べる).
+ */
+const kunText = (reading: string): string => {
+  const [stem = '', okurigana] = reading.replace(/-/g, '').split('.');
+  return okurigana ? `${stem}(${okurigana})` : stem;
+};
+
+/**
+ * The main readings of a kanji, e.g. "ニチ, ジツ · ひ": up to two on readings (katakana) and two
+ * kun readings (hiragana). Suffix forms (-び, -か of 日) are sound changes inside words, so
+ * they are left out unless the kanji has no other kun reading.
+ */
+export function mainReadings(
+  onReadings: readonly string[],
+  kunReadings: readonly string[],
+): string {
+  const standalone = kunReadings.filter((reading) => !reading.startsWith('-'));
+  const kun = [...new Set((standalone.length ? standalone : kunReadings).map(kunText))];
+  const on = [...new Set(onReadings)];
+  return [on.slice(0, MAIN_READINGS).join(', '), kun.slice(0, MAIN_READINGS).join(', ')]
+    .filter(Boolean)
+    .join(' · ');
 }
 
-const faceOf = (item: PracticeItem): string => item.word?.kana ?? item.characters.join('');
+/**
+ * The right answer of a card. A kana word's reading is written in romaji (the card shows the
+ * kana already); a kanji's or kanji word's reading in kana.
+ */
+function answerOf(item: PracticeItem, askFor: AskFor): string {
+  const word = item.word;
+  if (word) {
+    if (askFor === 'meaning') return word.meaning;
+    return item.script === 'kanji' ? word.kana : romaji(word.kana);
+  }
+  if (item.script !== 'kanji') return item.prompt; // a single kana: its romaji
+  return askFor === 'meaning'
+    ? item.prompt
+    : mainReadings(item.onReadings ?? [], item.kunReadings ?? []);
+}
 
-/** Cards of the same kind can lend each other wrong answers: kana with kana, words with words. */
-const sameKind = (a: PracticeItem, b: PracticeItem): boolean => Boolean(a.word) === Boolean(b.word);
+/** What the card shows: a kanji word in kanji (今日), a kana word in kana, or the character. */
+const faceOf = (item: PracticeItem): string =>
+  item.script === 'kanji'
+    ? (item.word?.kanji ?? item.characters.join(''))
+    : (item.word?.kana ?? item.characters.join(''));
+
+/**
+ * Cards of the same kind lend each other wrong answers: kana with kana, kanji with kanji, kana
+ * words with kana words and kanji words with kanji words, so no answer stands out by its form.
+ */
+const kindOf = (item: PracticeItem): string =>
+  `${item.word ? 'word' : 'character'}:${item.script === 'kanji' ? 'kanji' : 'kana'}`;
+const sameKind = (a: PracticeItem, b: PracticeItem): boolean => kindOf(a) === kindOf(b);
 
 /** The kana that look like this one, with their romaji: シ → ツ tsu, ソ so, ン n. */
 export function lookAlikes(face: string): { kana: string; romaji: string }[] {

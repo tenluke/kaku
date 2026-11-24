@@ -1424,6 +1424,13 @@ textarea {
   font-size: 1.05rem;
   text-align: left;
 }
+/* Breaks only between readings or words, never inside a reading (メイ, ミョウ). */
+.card-option span {
+  word-break: keep-all;
+}
+.card-options.long {
+  grid-template-columns: 1fr;
+}
 .card-option kbd {
   display: inline-grid;
   flex: none;

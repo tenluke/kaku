@@ -3,6 +3,7 @@ import {
   KANA_SCRIPTS,
   KANA_SETS,
   kanaItems,
+  kanjiItem,
   sessionItems,
   shuffled,
   type JlptLevel,
@@ -78,11 +79,14 @@ const hasWordsMode = (): boolean => tab === 'kana' || tab === 'kanji';
 const currentMode = (): PracticeMode => (mode === 'words' && !hasWordsMode() ? 'random' : mode);
 
 /** Flashcards are on the Kana tab for now; the Kanji and Lists tabs only write. */
-const flashcardsOffered = (): boolean => tab === 'kana';
-const currentExercise = (): Exercise => (flashcardsOffered() ? exercise : 'write');
-/** Meaning or reading is only a choice for words: a single kana is always asked by reading. */
+const currentExercise = (): Exercise => exercise;
+/**
+ * Meaning or reading is a choice for words and kanji. A single kana is always asked by its
+ * reading, so the choice is hidden when only kana are selected.
+ */
 const asksForChoice = (): boolean =>
-  currentExercise() === 'flashcards' && currentMode() === 'words';
+  currentExercise() === 'flashcards' &&
+  (currentMode() === 'words' || pool().some((item) => item.script === 'kanji'));
 
 /** What the start button starts: writing, or flashcards asking for a meaning or reading. */
 export interface SessionKind {
@@ -98,6 +102,16 @@ const startLabel = (): string =>
   currentExercise() === 'flashcards' ? TEXT.startFlashcards : TEXT.startPractice;
 
 /**
+ * The hardest JLPT level among these kanji (N1 is the hardest), or null if one has no level:
+ * Kanji-tab words must be at this level or easier.
+ */
+function hardestLevel(items: readonly PracticeItem[]): JlptLevel | null {
+  const levels = items.map((item) => item.jlpt);
+  if (!levels.length || levels.some((level) => level === undefined)) return null;
+  return Math.min(...(levels as JlptLevel[])) as JlptLevel;
+}
+
+/**
  * The words the selection allows, or null while the word list is loading: on the Kana tab
  * words made of the selected kana, on the Kanji tab words written with the selected kanji.
  */
@@ -105,7 +119,12 @@ function availableWords(): Word[] | null {
   const words = loadedWords();
   if (!words) return null;
   if (tab === 'kanji') {
-    return kanjiWordsUsing(words, new Set(pool().flatMap((item) => item.characters)));
+    const chosen = pool();
+    return kanjiWordsUsing(
+      words,
+      new Set(chosen.flatMap((item) => item.characters)),
+      hardestLevel(chosen),
+    );
   }
   return wordsUsing(words, new Set(pool().map((item) => item.id)));
 }
@@ -153,7 +172,6 @@ function renderToggles(): void {
     setPressed(button, button.dataset.askFor === askFor);
   });
   // Each setting is only shown where it does something.
-  byId('exercise-row').hidden = !flashcardsOffered();
   byId('ask-for-row').hidden = !asksForChoice();
   byId('write-note').hidden = currentExercise() !== 'write';
   byId('cards-note').hidden = currentExercise() !== 'flashcards';
@@ -212,7 +230,7 @@ function summaryText(words: Word[] | null, selected: number): string {
   if (wordsFailed) return TEXT.wordsLoadFailed;
   if (!words) return TEXT.loadingWords;
   return tab === 'kanji'
-    ? kanjiWordsSummary(words.length, selected)
+    ? kanjiWordsSummary(words.length, selected, hardestLevel(pool()))
     : wordsSummary(words.length, selected);
 }
 
@@ -482,17 +500,39 @@ export function newSessionItems(): PracticeItem[] {
 // Enough words to find plausible wrong answers, without building cards from thousands.
 const WORD_POOL_SIZE = 200;
 
+/** Every kanji word in the word list, for wrong answers when the selection has too few. */
+const allKanjiWords = (words: readonly Word[]): Word[] =>
+  kanjiWordsUsing(words, new Set(kanji.map((record) => record.character)));
+
+/** Kanji of the same JLPT levels as the selected ones, for wrong answers of a similar kind. */
+function kanjiOfSameLevels(items: readonly PracticeItem[]): PracticeItem[] {
+  if (!items.some((item) => item.script === 'kanji')) return [];
+  const levels = new Set(items.flatMap((item) => (item.jlpt ? [item.jlpt] : [])));
+  // Kanji outside the JLPT lists (RTK) have no level: then any JLPT kanji will do.
+  return kanji
+    .filter((record) => record.jlpt !== null && (levels.size === 0 || levels.has(record.jlpt)))
+    .map(kanjiItem);
+}
+
 /**
  * Items that lend flashcards their wrong answers: other words of the selection (or any words if
- * there are too few), or every kana, so look-alikes are there even if they aren't selected.
+ * there are too few), or the selected characters plus every kana (so look-alikes are there
+ * even if they aren't selected) and the kanji of the same JLPT levels.
  */
 export function flashcardPool(): PracticeItem[] {
   if (currentMode() === 'words') {
     const chosen = availableWords() ?? [];
-    const words = chosen.length >= 4 ? chosen : (loadedWords() ?? []);
-    return shuffled(words).slice(0, WORD_POOL_SIZE).map(wordItem);
+    const toItem = tab === 'kanji' ? kanjiWordItem : wordItem;
+    const all = loadedWords() ?? [];
+    const words = chosen.length >= 4 ? chosen : tab === 'kanji' ? allKanjiWords(all) : all;
+    return shuffled(words).slice(0, WORD_POOL_SIZE).map(toItem);
   }
-  return KANA_SCRIPTS.flatMap((script) => KANA_SETS.flatMap((set) => kanaItems(script, set)));
+  const selected = pool();
+  return [
+    ...selected,
+    ...KANA_SCRIPTS.flatMap((script) => KANA_SETS.flatMap((set) => kanaItems(script, set))),
+    ...kanjiOfSameLevels(selected),
+  ];
 }
 
 /** Shows "Loading…" on the start button while kanji stroke data downloads. */

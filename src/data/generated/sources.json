@@ -1,8 +1,9 @@
 {
   "kanjiVg": "r20260714",
-  "kanjidic2": "2026-11-10",
-  "jmdict": "2026-11-12",
+  "kanjidic2": "2026-11-23",
+  "jmdict": "2026-11-23",
   "kanjiDataCommit": "00fd7079c3890f430759536f91aa5e854ec0ca4f",
+  "jlptWordsCommit": "1ad66734417aca9dbcca6b2d5ee440cb13ab3ba0",
   "kanjiCount": {
     "n5": 79,
     "n4": 166,
@@ -11,7 +12,8 @@
     "n1": 1232,
     "rtk1NotInJlpt": 193
   },
-  "wordCount": 18248,
+  "wordCount": 20666,
+  "kanjiWordsWithJlptLevel": 6053,
   "kanaWithoutStrokes": "",
   "strokeCountMismatches": [
     "辻: KANJIDIC2 5, KanjiVG 6",

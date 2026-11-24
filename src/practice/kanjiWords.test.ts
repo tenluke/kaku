@@ -33,6 +33,20 @@ describe('kanjiWordsUsing', () => {
     const words = [word('日本', 'にっぽん', 20), word('日本', 'にほん', 5)];
     expect(kanjiWordsUsing(words, allowed('日本'))).toEqual([word('日本', 'にほん', 5)]);
   });
+
+  it('keeps only words at the hardest chosen JLPT level or easier, when given one', () => {
+    const words = [
+      { ...word('今日', 'きょう'), jlpt: 5 as const },
+      { ...word('今朝', 'けさ'), jlpt: 4 as const },
+      word('今日中', 'きょうじゅう'), // on no JLPT list
+    ];
+    const chosen = allowed('今日朝中');
+    expect(kanjiWordsUsing(words, chosen, 5).map((w) => w.kanji)).toEqual(['今日']);
+    expect(kanjiWordsUsing(words, chosen, 4).map((w) => w.kanji)).toEqual(['今日', '今朝']);
+    expect(kanjiWordsUsing(words, chosen).map((w) => w.kanji)).toHaveLength(3);
+    // With N1 chosen, words on no list come too.
+    expect(kanjiWordsUsing(words, chosen, 1).map((w) => w.kanji)).toHaveLength(3);
+  });
 });
 
 describe('kanjiWordItem', () => {
@@ -92,10 +106,12 @@ describe('the real word list on the Kanji tab', () => {
   const words = (wordRows as WordRow[]).map(wordFromRow);
   const n5 = new Set(ALL_KANJI.filter((k) => k.jlpt === 5).map((k) => k.character));
 
-  it('has hundreds of words for someone who knows the N5 kanji', () => {
-    const usable = kanjiWordsUsing(words, n5);
-    expect(usable.length).toBeGreaterThan(500);
-    expect(usable.map((w) => w.kanji)).toContain('毎日');
+  it('has about a hundred N5 words for someone who knows the N5 kanji', () => {
+    const usable = kanjiWordsUsing(words, n5, 5);
+    expect(usable.length).toBeGreaterThan(80);
+    expect(usable.map((w) => w.kanji)).toEqual(expect.arrayContaining(['毎日', '今日']));
+    // Words written with N5 kanji but learnt later are left out.
+    expect(usable.map((w) => w.kanji)).not.toContain('小国');
   });
 
   it('has stroke data for every character of every word, once their levels are loaded', async () => {

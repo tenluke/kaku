@@ -82,6 +82,15 @@ describe('wordsUsing', () => {
     allowed.add('hiragana:しゃ');
     expect(wordsUsing(words, allowed).map((w) => w.kana)).toEqual(['しゃしん']);
   });
+
+  it('keeps one word per reading, the most frequent', () => {
+    const kami = [
+      { kana: 'かみ', meaning: 'god', rank: 20, kanji: '神' },
+      { kana: 'かみ', meaning: 'paper', rank: 3, kanji: '紙' },
+    ];
+    const allowed = new Set(['hiragana:か', 'hiragana:み']);
+    expect(wordsUsing(kami, allowed).map((w) => w.meaning)).toEqual(['paper']);
+  });
 });
 
 describe('pickWords', () => {

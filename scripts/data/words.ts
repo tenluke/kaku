@@ -4,6 +4,8 @@ import {
   HIRAGANA_VOICED,
   SMALL_YA_YU_YO,
 } from '../../src/data/kana.ts';
+import type { JlptLevel } from './jlpt.ts';
+import { wordKey } from './jlptWords.ts';
 import type { JmdictEntry, JmdictReading, JmdictSense } from './jmdict.ts';
 
 /*
@@ -21,20 +23,30 @@ export interface WordRecord {
    * UNRANKED for common words without a band (most loanwords, set phrases like ありがとう).
    */
   rank: number;
+  /** The JLPT level of a kanji word, if it is on Waller's vocabulary lists (jlptWords.ts). */
+  jlpt?: JlptLevel;
 }
 
 export const UNRANKED = 49;
 
 /**
- * How a word is written to words.json: [kana, meaning, rank, kanji?]. A short list instead of
- * an object, because the key names repeated 18,000 times would make the file a third bigger.
+ * How a word is written to words.json: [kana, meaning, rank, kanji?, jlpt?]. A short list
+ * instead of an object, because the key names repeated 20,000 times would make the file a
+ * third bigger. Only kanji words have a JLPT level.
  */
-export type WordRow = [kana: string, meaning: string, rank: number, kanji?: string];
+export type WordRow = [
+  kana: string,
+  meaning: string,
+  rank: number,
+  kanji?: string,
+  jlpt?: JlptLevel,
+];
 
-export const toRow = (word: WordRecord): WordRow =>
-  word.kanji
-    ? [word.kana, word.meaning, word.rank, word.kanji]
-    : [word.kana, word.meaning, word.rank];
+export function toRow(word: WordRecord): WordRow {
+  if (!word.kanji) return [word.kana, word.meaning, word.rank];
+  if (!word.jlpt) return [word.kana, word.meaning, word.rank, word.kanji];
+  return [word.kana, word.meaning, word.rank, word.kanji, word.jlpt];
+}
 
 export const MIN_LENGTH = 2;
 export const MAX_LENGTH = 6; // boxes; longer words don't fit on a phone screen
@@ -84,13 +96,21 @@ export function isDrawable(kana: string): boolean {
 const appliesTo = (sense: JmdictSense, kana: string) =>
   sense.onlyForReadings.length === 0 || sense.onlyForReadings.includes(kana);
 
+const goesWith = (reading: JmdictReading, kanji: string): boolean =>
+  !reading.noKanji && (reading.onlyWithKanji.length === 0 || reading.onlyWithKanji.includes(kanji));
+
+/**
+ * The kanji spelling shown with a reading: the first common spelling it goes with (loanwords
+ * like コーヒー have rare ones, 珈琲, which are left out). Only if this is the usual reading of
+ * that spelling: JMdict lists it first among the common readings (今日 is きょう, not こんにち;
+ * 明日 is あした, not あす or みょうにち). The frequency bands can't tell: こんにち has one, きょう
+ * none. The other readings stay as kana words.
+ */
 function kanjiSpelling(entry: JmdictEntry, reading: JmdictReading): string | undefined {
-  if (reading.noKanji) return undefined;
-  const spellings = entry.kanji.filter(
-    (k) => reading.onlyWithKanji.length === 0 || reading.onlyWithKanji.includes(k.text),
-  );
-  // Only a common spelling: loanwords like コーヒー have rare ones (珈琲).
-  return spellings.find((k) => k.common)?.text;
+  const spelling = entry.kanji.find((k) => k.common && goesWith(reading, k.text))?.text;
+  if (!spelling) return undefined;
+  const usual = entry.readings.find((r) => r.common && goesWith(r, spelling));
+  return usual === reading ? spelling : undefined;
 }
 
 /** Leaves out notes in brackets: "dog (Canis (lupus) familiaris)" becomes "dog". */
@@ -111,7 +131,26 @@ export function shortMeaning(glosses: readonly string[]): string {
   return second && both.length <= MEANING_MAX_LENGTH ? both : first;
 }
 
-function candidate(entry: JmdictEntry, reading: JmdictReading): WordRecord | null {
+/**
+ * The JLPT level of a kanji word: the lists may write it with any spelling JMdict knows for
+ * this reading, including rare or older ones (終る for 終わる), so all of them are looked up.
+ */
+function jlptLevel(
+  entry: JmdictEntry,
+  reading: JmdictReading,
+  levels: ReadonlyMap<string, JlptLevel>,
+): JlptLevel | undefined {
+  const found = entry.kanji
+    .filter((k) => goesWith(reading, k.text))
+    .flatMap((k) => levels.get(wordKey(k.text, reading.kana)) ?? []);
+  return found.length ? (Math.max(...found) as JlptLevel) : undefined;
+}
+
+function candidate(
+  entry: JmdictEntry,
+  reading: JmdictReading,
+  levels: ReadonlyMap<string, JlptLevel>,
+): WordRecord | null {
   if (!reading.common || !isDrawable(reading.kana)) return null;
   // The meaning shown is the first one for this reading.
   const sense = entry.senses.find((s) => appliesTo(s, reading.kana));
@@ -122,26 +161,38 @@ function candidate(entry: JmdictEntry, reading: JmdictReading): WordRecord | nul
   const meaning = shortMeaning(sense.glosses);
   if (meaning.length > MEANING_TOO_LONG) return null;
   const kanji = kanjiSpelling(entry, reading);
+  const jlpt = kanji ? jlptLevel(entry, reading, levels) : undefined;
   return {
     kana: reading.kana,
     meaning,
     ...(kanji ? { kanji } : {}),
     rank: reading.frequencyBand ?? UNRANKED,
+    ...(jlpt ? { jlpt } : {}),
   };
 }
 
 /**
- * The common, drawable words, one per spelling (when several words share a spelling, like
- * かみ "paper" and "god", the most frequent one is kept), sorted by kana.
+ * The common, drawable words, one per reading and kanji spelling: かみ 紙 "paper" and かみ 神
+ * "god" are both kept, so each kanji word has its reading (今日 きょう, not only 京 きょう).
+ * Words with the same reading and spelling keep the most frequent one. The Kana tab uses one
+ * word per reading (src/practice/words.ts). Sorted by kana, then by frequency. `levels` gives
+ * kanji words their JLPT level (jlptWords.ts).
  */
-export function pickWords(entries: readonly JmdictEntry[]): WordRecord[] {
+export function pickWords(
+  entries: readonly JmdictEntry[],
+  levels: ReadonlyMap<string, JlptLevel> = new Map(),
+): WordRecord[] {
   const best = new Map<string, WordRecord>();
   for (const entry of entries) {
     for (const reading of entry.readings) {
-      const found = candidate(entry, reading);
-      const current = best.get(reading.kana);
-      if (found && (!current || found.rank < current.rank)) best.set(reading.kana, found);
+      const found = candidate(entry, reading, levels);
+      if (!found) continue;
+      const key = `${found.kana}|${found.kanji ?? ''}`;
+      const current = best.get(key);
+      if (!current || found.rank < current.rank) best.set(key, found);
     }
   }
-  return [...best.values()].sort((a, b) => (a.kana < b.kana ? -1 : a.kana > b.kana ? 1 : 0));
+  return [...best.values()].sort((a, b) =>
+    a.kana !== b.kana ? (a.kana < b.kana ? -1 : 1) : a.rank - b.rank,
+  );
 }

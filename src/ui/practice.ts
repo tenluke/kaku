@@ -145,7 +145,8 @@ function loadItem(): void {
 }
 
 /** The badge above the prompt, e.g. "漢字 · Kanji · N5" or "ひらがな · Hiragana · Word". */
-function scriptBadge(item: PracticeItem): string {
+/** The badge above the prompt, e.g. "ひらがな · Hiragana · Word" or "漢字 · Kanji · N5". */
+export function scriptBadge(item: PracticeItem): string {
   if (item.script !== 'kanji')
     return `${TEXT.scriptBadge[item.script]}${item.word ? TEXT.wordBadge : ''}`;
   if (item.word) return `${TEXT.scriptBadge.kanji}${TEXT.wordBadge}`;
