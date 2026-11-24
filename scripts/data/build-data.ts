@@ -4,7 +4,8 @@
  *   strokes-kana.json  – stroke paths of all kana
  *   strokes-n5.json …  – stroke paths of the kanji of each JLPT level (loaded per level)
  *   strokes-extra.json – stroke paths of the RTK Book 1 kanji that aren't in the JLPT lists
- *   words.json         – common words written in kana, for the Kana tab's Words mode
+ *   words.json         – common words (kana, meaning, frequency, kanji, JLPT level), for the
+ *                        Words mode of the Kana and Kanji tabs and for flashcards
  *   sources.json       – which source versions were used
  * Run with: npm run data
  */
@@ -17,8 +18,11 @@ import { ALL_KANA } from './kana.ts';
 import { parseKanjidic, type KanjidicEntry } from './kanjidic.ts';
 import { kanjiVgFileName, parseKanjiVgStrokes } from './kanjivg.ts';
 import { arrayPerLine, objectPerLine } from './output.ts';
+import { addJlptWords } from './jlptWords.ts';
 import { pickWords, toRow } from './words.ts';
 import {
+  JLPT_WORDS_COMMIT,
+  jlptWordsUrl,
   JMDICT_URL,
   KANJI_DATA_COMMIT,
   KANJI_DATA_URL,
@@ -116,7 +120,15 @@ async function main(): Promise<void> {
   const rtkOnly = kanji.filter((record) => record.jlpt === null).map((r) => r.character);
   const kanaStrokes = await loadStrokes(ALL_KANA);
   const jmdict = parseJmdict(await downloadGzipText(JMDICT_URL, 'JMdict_e.gz'));
-  const words = pickWords(jmdict.entries);
+  const wordLevels = new Map<string, JlptLevel>();
+  for (const level of LEVELS) {
+    addJlptWords(
+      wordLevels,
+      await downloadText(jlptWordsUrl(level), `jlpt-words/n${level}.csv`),
+      level,
+    );
+  }
+  const words = pickWords(jmdict.entries, wordLevels);
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   const write = (name: string, text: string) => writeFile(join(OUTPUT_DIR, name), text);
@@ -137,6 +149,7 @@ async function main(): Promise<void> {
         kanjidic2: kanjidicDate,
         jmdict: jmdict.dateOfCreation,
         kanjiDataCommit: KANJI_DATA_COMMIT,
+        jlptWordsCommit: JLPT_WORDS_COMMIT,
         kanjiCount: {
           ...Object.fromEntries(
             LEVELS.map((level) => [`n${level}`, kanji.filter((r) => r.jlpt === level).length]),
@@ -144,6 +157,7 @@ async function main(): Promise<void> {
           rtk1NotInJlpt: rtkOnly.length,
         },
         wordCount: words.length,
+        kanjiWordsWithJlptLevel: words.filter((word) => word.jlpt).length,
         kanaWithoutStrokes: kanaStrokes.missing.join(''),
         strokeCountMismatches: mismatches,
       },

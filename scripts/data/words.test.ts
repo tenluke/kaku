@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { JmdictEntry, JmdictReading, JmdictSense } from './jmdict.ts';
+import { wordKey } from './jlptWords.ts';
 import { isDrawable, pickWords, shortMeaning, toRow, UNRANKED, withoutBrackets } from './words.ts';
 
 const reading = (kana: string, extra: Partial<JmdictReading> = {}): JmdictReading => ({
@@ -101,12 +102,23 @@ describe('pickWords', () => {
     ]);
   });
 
-  it('keeps the most frequent word when several share a spelling', () => {
+  it('keeps each kanji spelling of a reading, the most frequent first', () => {
     const words = pickWords([
       entry([reading('かみ', { frequencyBand: 20 })], [sense(['god'])], ['神']),
       entry([reading('かみ', { frequencyBand: 3 })], [sense(['paper'])], ['紙']),
     ]);
-    expect(words).toEqual([{ kana: 'かみ', meaning: 'paper', kanji: '紙', rank: 3 }]);
+    expect(words).toEqual([
+      { kana: 'かみ', meaning: 'paper', kanji: '紙', rank: 3 },
+      { kana: 'かみ', meaning: 'god', kanji: '神', rank: 20 },
+    ]);
+  });
+
+  it('keeps the most frequent word when reading and spelling are the same', () => {
+    const words = pickWords([
+      entry([reading('かみ', { frequencyBand: 20 })], [sense(['top'])], ['上']),
+      entry([reading('かみ', { frequencyBand: 8 })], [sense(['upper part'])], ['上']),
+    ]);
+    expect(words).toEqual([{ kana: 'かみ', meaning: 'upper part', kanji: '上', rank: 8 }]);
   });
 
   it('shows only a common kanji spelling that goes with the reading', () => {
@@ -119,7 +131,70 @@ describe('pickWords', () => {
   });
 });
 
+describe('the kanji spelling of a word', () => {
+  it('goes with the usual reading only: the first common one JMdict lists', () => {
+    const today = entry(
+      [reading('きょう', { frequencyBand: null }), reading('こんにち', { frequencyBand: 2 })],
+      [sense(['today'])],
+      ['今日'],
+    );
+    expect(pickWords([today]).map((word) => `${word.kana} ${word.kanji}`)).toEqual([
+      'きょう 今日',
+      'こんにち undefined',
+    ]);
+  });
+
+  it('skips rare readings when finding the usual one', () => {
+    const japan = entry(
+      [reading('ひのもと', { common: false }), reading('にほん'), reading('にっぽん')],
+      [sense(['Japan'])],
+      ['日本'],
+    );
+    expect(pickWords([japan]).find((word) => word.kanji)?.kana).toBe('にほん');
+  });
+});
+
+describe('the JLPT level of a word', () => {
+  it('is given to kanji words on the lists, by spelling and reading', () => {
+    const levels = new Map([[wordKey('今日', 'きょう'), 5 as const]]);
+    const words = pickWords(
+      [
+        entry([reading('きょう'), reading('こんにち')], [sense(['today'])], ['今日']),
+        entry([reading('きょう')], [sense(['capital'])], ['京']),
+      ],
+      levels,
+    );
+    expect(words.map((word) => `${word.kanji} ${word.kana} ${word.jlpt}`)).toEqual([
+      '今日 きょう 5',
+      '京 きょう undefined',
+      'undefined こんにち undefined',
+    ]);
+  });
+
+  it('is found under another spelling of the same word (終る for 終わる)', () => {
+    const levels = new Map([[wordKey('終る', 'おわる'), 5 as const]]);
+    const end = {
+      ...entry([reading('おわる')], [sense(['to end'])]),
+      kanji: [
+        { text: '終わる', common: true },
+        { text: '終る', common: false },
+      ],
+    };
+    expect(pickWords([end], levels)).toMatchObject([{ kanji: '終わる', jlpt: 5 }]);
+  });
+});
+
 describe('toRow', () => {
+  it('writes the JLPT level last, only for kanji words that have one', () => {
+    expect(toRow({ kana: 'きょう', meaning: 'today', rank: 49, kanji: '今日', jlpt: 5 })).toEqual([
+      'きょう',
+      'today',
+      49,
+      '今日',
+      5,
+    ]);
+  });
+
   it('writes a word as [kana, meaning, rank, kanji?]', () => {
     expect(toRow({ kana: 'いぬ', meaning: 'dog', kanji: '犬', rank: 3 })).toEqual([
       'いぬ',

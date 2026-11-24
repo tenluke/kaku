@@ -221,8 +221,14 @@ export const selectionSummary = (count: number): string => `${count} symbols in 
 export const wordsSummary = (words: number, kana: number): string =>
   `${words} ${words === 1 ? 'word uses' : 'words use'} only these ${kana} kana`;
 
-export const kanjiWordsSummary = (words: number, kanji: number): string =>
-  `${words} ${words === 1 ? 'word uses' : 'words use'} only these ${kanji} kanji (and kana)`;
+/**
+ * E.g. "127 N5 words use only these 79 kanji (and kana)", or "N5–N4 words" for two levels. With
+ * N1 (or no level) every word counts, so no level is named.
+ */
+export const kanjiWordsSummary = (words: number, kanji: number, hardest: number | null): string => {
+  const levels = hardest === null || hardest === 1 ? '' : hardest === 5 ? 'N5 ' : `N5–N${hardest} `;
+  return `${words} ${levels}${words === 1 ? 'word uses' : 'words use'} only these ${kanji} kanji (and kana)`;
+};
 
 /** The stroke count told by the first press of Hint; digraphs list each character. */
 export const strokeCountText = (counts: readonly number[]): string => {

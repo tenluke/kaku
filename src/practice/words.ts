@@ -1,6 +1,13 @@
 import { PASS_PERCENT } from '../checking/scoring';
 import type { ItemResult } from './attempt';
-import { KANA_SCRIPTS, KANA_SETS, kanaItems, shuffled, type PracticeItem } from './items';
+import {
+  KANA_SCRIPTS,
+  KANA_SETS,
+  kanaItems,
+  shuffled,
+  type JlptLevel,
+  type PracticeItem,
+} from './items';
 
 /*
  * Words mode on the Kana tab: real words (from JMdict) made only of the kana you selected,
@@ -14,15 +21,25 @@ export interface Word {
   /** JMdict frequency band: 1 = among the most common words; UNRANKED = no band. */
   rank: number;
   kanji?: string;
+  /** The JLPT level of a kanji word on Waller's vocabulary lists; none if it isn't on them. */
+  jlpt?: JlptLevel;
 }
 
 /** How words.json stores a word. Must match `WordRow` in scripts/data/words.ts. */
-export type WordRow = [kana: string, meaning: string, rank: number, kanji?: string];
+export type WordRow = [
+  kana: string,
+  meaning: string,
+  rank: number,
+  kanji?: string,
+  jlpt?: JlptLevel,
+];
 
 export const UNRANKED = 49;
 
-export const wordFromRow = ([kana, meaning, rank, kanji]: WordRow): Word =>
-  kanji ? { kana, meaning, rank, kanji } : { kana, meaning, rank };
+export function wordFromRow([kana, meaning, rank, kanji, jlpt]: WordRow): Word {
+  if (!kanji) return { kana, meaning, rank };
+  return jlpt ? { kana, meaning, rank, kanji, jlpt } : { kana, meaning, rank, kanji };
+}
 
 /** One kana to write: a single kana, or a digraph like きゃ (two boxes, one pass rate). */
 export interface KanaUnit {
@@ -85,11 +102,22 @@ export function romaji(word: string): string {
   return text;
 }
 
-/** The words that use only these kana (by item id). Small っ and ー are always allowed. */
+/**
+ * The words that use only these kana (by item id), one per reading: words.json has a word per
+ * kanji spelling (かみ 紙 "paper", かみ 神 "god"), and the most frequent one is kept, which
+ * words.json lists first. Small っ and ー are always allowed.
+ */
 export function wordsUsing(words: readonly Word[], allowedIds: ReadonlySet<string>): Word[] {
-  return words.filter((word) =>
-    kanaUnits(word.kana).every((unit) => unit.itemId === null || allowedIds.has(unit.itemId)),
-  );
+  const byKana = new Map<string, Word>();
+  for (const word of words) {
+    const kept = byKana.get(word.kana);
+    if (kept && kept.rank <= word.rank) continue;
+    const allowed = kanaUnits(word.kana).every(
+      (unit) => unit.itemId === null || allowedIds.has(unit.itemId),
+    );
+    if (allowed) byKana.set(word.kana, word);
+  }
+  return [...byKana.values()];
 }
 
 // Most words without a frequency band are common loanwords (コーヒー); sort them in the middle.

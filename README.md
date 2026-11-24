@@ -11,8 +11,8 @@ It runs entirely in your browser. There is no account, and your data stays on yo
 - **Kanji**: the JLPT levels N5 to N1.
 - **Words**: write real words made only of the kana you selected, or (on the Kanji tab) written
   with the kanji you selected; a kanji word shows its reading and meaning.
-- **Flashcards** (Kana tab): pick the reading of a kana, or the meaning or reading of a kana
-  word, from four answers. A card answered wrong comes back until you get it right.
+- **Flashcards**: pick the meaning or reading of a kanji or a word, or the reading of a kana,
+  from four answers. A card answered wrong comes back until you get it right.
 - **Hints**: first the number of strokes, then the strokes one by one, in the right order.
 - **Lists**: save your own lists of characters, in main lists with sublists.
 - **Books**: follow _Remembering the Kanji_ 1 (6th edition) in frame order.

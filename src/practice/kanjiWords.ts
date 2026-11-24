@@ -1,7 +1,7 @@
 import kanaStrokes from '../data/generated/strokes-kana.json';
 import { PASS_PERCENT } from '../checking/scoring';
 import type { ItemResult } from './attempt';
-import type { PracticeItem } from './items';
+import type { JlptLevel, PracticeItem } from './items';
 import type { Word } from './words';
 
 /*
@@ -19,12 +19,23 @@ const isKanji = (character: string): boolean => HAN.test(character);
 /**
  * The words written only with these kanji (and kana that can be drawn), each spelling once:
  * when a spelling has more than one reading (日本: にほん, にっぽん), the most common one is kept.
+ *
+ * With `hardestLevel`, only words on the JLPT vocabulary lists at that level or easier: N5
+ * kanji also write words a learner meets much later (小国, 生物), so those are left out. With
+ * N1, the hardest level, words on no list come too: the lists don't have every everyday word.
+ * Without a level (kanji outside the JLPT lists), any word will do.
  */
-export function kanjiWordsUsing(words: readonly Word[], allowedKanji: ReadonlySet<string>): Word[] {
+export function kanjiWordsUsing(
+  words: readonly Word[],
+  allowedKanji: ReadonlySet<string>,
+  hardestLevel: JlptLevel | null = null,
+): Word[] {
   const bySpelling = new Map<string, Word>();
   for (const word of words) {
     const spelling = word.kanji;
     if (!spelling || ![...spelling].some(isKanji)) continue;
+    // Levels count down: N5 is the easiest, so "N4 or easier" is a level of 4 or more.
+    if (hardestLevel !== null && hardestLevel > 1 && (word.jlpt ?? 0) < hardestLevel) continue;
     const writable = [...spelling].every((character) =>
       isKanji(character) ? allowedKanji.has(character) : DRAWABLE_KANA.has(character),
     );

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { kanaItems, type PracticeItem } from '../practice/items';
+import { kanaItems, kanjiItem, type PracticeItem } from '../practice/items';
+import { kanjiWordItem } from '../practice/kanjiWords';
 import { wordItem } from '../practice/words';
-import { buildCard, CHOICES, lookAlikes } from './cards';
+import { buildCard, CHOICES, lookAlikes, mainReadings } from './cards';
 import { afterAnswer, REPEAT_GAP } from './queue';
 
 /** A repeatable stand-in for Math.random. */
@@ -96,6 +97,79 @@ describe('a card for a kana word', () => {
   it('gives fewer choices rather than repeating when the pool is small', () => {
     const card = buildCard(words[0] as PracticeItem, 'meaning', words.slice(0, 2), seededRandom(7));
     expect([...card.choices].sort()).toEqual(['face', 'pond']);
+  });
+});
+
+const kanji = (character: string, meanings: string[], on: string[], kun: string[]) =>
+  kanjiItem({ character, meanings, onReadings: on, kunReadings: kun, jlpt: 5 });
+const sun = kanji('日', ['day', 'sun', 'Japan'], ['ニチ', 'ジツ'], ['ひ', '-び', '-か']);
+const kanjiPool = [
+  sun,
+  kanji('月', ['month', 'moon'], ['ゲツ', 'ガツ'], ['つき']),
+  kanji('人', ['person'], ['ジン', 'ニン'], ['ひと', '-り', '-と']),
+  kanji('木', ['tree', 'wood'], ['ボク', 'モク'], ['き', 'こ-']),
+];
+
+describe('the main readings of a kanji', () => {
+  it('shows up to two on and two kun readings, without suffix forms', () => {
+    expect(mainReadings(['ニチ', 'ジツ'], ['ひ', '-び', '-か'])).toBe('ニチ, ジツ · ひ');
+    expect(mainReadings(['ジュウ', 'ジッ', 'ジュッ'], ['とお', 'と', 'そ'])).toBe(
+      'ジュウ, ジッ · とお, と',
+    );
+  });
+
+  it('puts the okurigana in brackets and drops prefix dashes', () => {
+    expect(mainReadings(['イチ'], ['ひと-', 'ひと.つ'])).toBe('イチ · ひと, ひと(つ)');
+    expect(mainReadings([], ['た.べる'])).toBe('た(べる)');
+  });
+
+  it('keeps suffix forms when there is no other kun reading', () => {
+    expect(mainReadings(['ショ'], ['-ら'])).toBe('ショ · ら');
+  });
+});
+
+describe('a card for a single kanji', () => {
+  it('asks for its meaning, with other kanji meanings as wrong answers', () => {
+    const card = buildCard(sun, 'meaning', kanjiPool, seededRandom(3));
+    expect(card).toMatchObject({ id: 'meaning:kanji:日', face: '日', answer: 'day, sun' });
+    expect([...card.choices].sort()).toEqual(['day, sun', 'month, moon', 'person', 'tree, wood']);
+  });
+
+  it('asks for its main readings in kana', () => {
+    const card = buildCard(sun, 'reading', kanjiPool, seededRandom(3));
+    expect(card).toMatchObject({ id: 'reading:kanji:日', answer: 'ニチ, ジツ · ひ' });
+    expect(card.choices).toContain('ゲツ, ガツ · つき');
+  });
+
+  it('takes wrong answers only from kanji, never from words or kana', () => {
+    const today = kanjiWordItem({ kana: 'きょう', meaning: 'today', rank: 1, kanji: '今日' });
+    const card = buildCard(sun, 'meaning', [...hiragana, today, kanjiPool[1] as PracticeItem]);
+    expect([...card.choices].sort()).toEqual(['day, sun', 'month, moon']);
+  });
+});
+
+describe('a card for a kanji word', () => {
+  const kanjiWord = (kana: string, spelling: string, meaning: string) =>
+    kanjiWordItem({ kana, meaning, rank: 1, kanji: spelling });
+  const today = kanjiWord('きょう', '今日', 'today');
+  const pool = [
+    today,
+    kanjiWord('あした', '明日', 'tomorrow'),
+    kanjiWord('にほん', '日本', 'Japan'),
+    kanjiWord('ひとり', '一人', 'one person'),
+    word('かお', 'face'),
+  ];
+
+  it('shows the word in kanji and asks for its reading in kana', () => {
+    const card = buildCard(today, 'reading', pool, seededRandom(5));
+    expect(card).toMatchObject({ id: 'reading:word:今日', face: '今日', answer: 'きょう' });
+    expect([...card.choices].sort()).toEqual(['あした', 'きょう', 'にほん', 'ひとり']);
+  });
+
+  it('asks for its meaning, with other kanji words as wrong answers', () => {
+    const card = buildCard(today, 'meaning', pool, seededRandom(5));
+    expect(card.answer).toBe('today');
+    expect(card.choices).not.toContain('face');
   });
 });
 

@@ -3,9 +3,9 @@ import { afterAnswer } from '../flashcards/queue';
 import { shuffled, type PracticeItem } from '../practice/items';
 import { askConfirmation } from './dialog';
 import { byId, escapeHtml } from './dom';
-import type { SessionResult } from './practice';
+import { scriptBadge, type SessionResult } from './practice';
 import { showScreen } from './screens';
-import { cardProgressText, cardVerdictText, TEXT } from './text';
+import { cardProgressText, cardVerdictText, readingsText, TEXT } from './text';
 
 /*
  * A flashcard session: a character or word is shown, you pick its meaning or reading from four
@@ -36,15 +36,16 @@ const nextButton = byId<HTMLButtonElement>('card-next');
 
 const currentCard = (): Card => queue[0] as Card;
 
-/** The badge above the card, e.g. "カタカナ · Katakana" or "ひらがな · Hiragana · Word". */
-function badge(item: PracticeItem): string {
-  return `${TEXT.scriptBadge[item.script]}${item.word ? TEXT.wordBadge : ''}`;
-}
-
 /** What is worth knowing after answering, besides the answer itself. */
 function infoHtml(card: Card): string {
-  const word = card.item.word;
+  const { item } = card;
+  const word = item.word;
   if (word) return `<span lang="ja">${escapeHtml(word.kana)}</span> · ${escapeHtml(word.meaning)}`;
+  if (item.script === 'kanji') {
+    // All its readings, not only the main ones the answers show.
+    const readings = readingsText(item.onReadings ?? [], item.kunReadings ?? []);
+    return `${escapeHtml(item.prompt)}<br><span lang="ja">${escapeHtml(readings)}</span>`;
+  }
   const alike = lookAlikes(card.face)
     .map(({ kana, romaji }) => `<span lang="ja">${escapeHtml(kana)}</span> ${escapeHtml(romaji)}`)
     .join(', ');
@@ -56,7 +57,7 @@ function showCard(): void {
   answered = false;
   const screen = byId('cards-screen');
   screen.dataset.script = card.item.script;
-  byId('cards-script-label').textContent = badge(card.item);
+  byId('cards-script-label').textContent = scriptBadge(card.item);
   byId('cards-progress-text').textContent = cardProgressText(done, total);
   byId('cards-mode-text').textContent = TEXT.cards.mode[askFor];
   byId('cards-progress-fill').style.width = `${(done / total) * 100}%`;
@@ -70,6 +71,10 @@ function showCard(): void {
     (isRepeat ? `<small>${escapeHtml(TEXT.cards.once)}</small>` : '');
   // Shuffled again for a repeat, so the right answer isn't remembered by its place.
   const choices = isRepeat ? shuffled(card.choices) : card.choices;
+  // A kanji's readings ("ショク, ジキ · く(う), く(らう)") are too long for two columns.
+  const isKanjiReading =
+    card.item.script === 'kanji' && !card.item.word && card.askFor === 'reading';
+  options.classList.toggle('long', isKanjiReading);
   options.innerHTML = choices
     .map(
       (choice, index) =>
